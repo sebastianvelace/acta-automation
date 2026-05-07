@@ -107,3 +107,4 @@ python src/fix_template.py
 - El [`Dockerfile`](Dockerfile) en la raíz está pensado para **Spaces** (puerto **7860**, LibreOffice).
 - Crea un Space tipo **Docker**, conecta el repo y define **`GROQ_API_KEY`** en Settings → Repository secrets.
 - Health: **`GET /api/health`**; proceso: **`POST /api/process`** igual que en local.
+# acta-automation
