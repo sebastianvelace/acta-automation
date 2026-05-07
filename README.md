@@ -97,7 +97,13 @@ python src/fix_template.py
 
 ## Railway (deploy del API)
 
-- Imagen definida en el [`Dockerfile`](Dockerfile) (`python:3.11-slim` + LibreOffice).
-- Variables de entorno en Railway: **`GROQ_API_KEY`** (obligatorio). Opcionalmente ajustes de Groq/modelo si los añades al código.
+- Imagen en [`Dockerfile.railway`](Dockerfile.railway) (`python:3.11-slim` + LibreOffice).
+- Variables de entorno en Railway: **`GROQ_API_KEY`** (obligatorio).
 - El contenedor escucha **`${PORT:-8000}`** (Railway inyecta `PORT` automáticamente).
-- Pon el SPA (Vercel u otro) apuntando a la URL HTTPS del servicio y **amplía `allow_origins`** en [`api/app.py`](api/app.py) con ese dominio.
+- Pon el SPA (Vercel u otro) apuntando a la URL HTTPS del servicio. El API usa CORS **`allow_origins=["*"]`** por ahora (revísalo para producción).
+
+## Hugging Face Spaces
+
+- El [`Dockerfile`](Dockerfile) en la raíz está pensado para **Spaces** (puerto **7860**, LibreOffice).
+- Crea un Space tipo **Docker**, conecta el repo y define **`GROQ_API_KEY`** en Settings → Repository secrets.
+- Health: **`GET /api/health`**; proceso: **`POST /api/process`** igual que en local.
