@@ -1,0 +1,8 @@
+docxtpl
+python-docx
+groq
+python-dotenv
+watchdog
+fastapi
+uvicorn[standard]
+python-multipart

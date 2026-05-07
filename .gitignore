@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+web/node_modules/
+web/dist/
+node_modules/
