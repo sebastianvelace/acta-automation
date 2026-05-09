@@ -10,6 +10,15 @@ type ProcessPayload = {
   docx_base64: string | null;
 };
 
+type ApiErrorPayload = {
+  error_code: string;
+  user_message: string;
+  request_id: string;
+  technical_details?: string;
+};
+
+type UiPhase = "idle" | "uploading" | "processing" | "success" | "error";
+
 function downloadBase64(b64: string, filename: string, mime: string) {
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
@@ -27,54 +36,80 @@ function downloadBase64(b64: string, filename: string, mime: string) {
 
 export function App() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastFileRef = useRef<File | null>(null);
   const [dragFocus, setDragFocus] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<UiPhase>("idle");
+  const [serverError, setServerError] = useState<ApiErrorPayload | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [payload, setPayload] = useState<ProcessPayload | null>(null);
   const [fileLabel, setFileLabel] = useState<string | null>(null);
 
-  const upload = async (file: File) => {
-    setError(null);
+  const busy = phase === "uploading" || phase === "processing";
+
+  const upload = useCallback(async (file: File) => {
+    lastFileRef.current = file;
+    setServerError(null);
+    setLocalError(null);
     setPayload(null);
-    setBusy(true);
+    setPhase("uploading");
     try {
       const fd = new FormData();
       fd.append("file", file);
+      setPhase("processing");
       const res = await fetch(`${apiBase}/api/process`, {
         method: "POST",
         body: fd,
       });
-      if (!res.ok) {
-        let msg = `${res.status} ${res.statusText}`;
-        try {
-          const body = await res.json();
-          if (body.detail) {
-            msg = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
-          }
-        } catch {
-          /* ignore */
-        }
-        throw new Error(msg);
+      let body: Record<string, unknown> = {};
+      try {
+        body = (await res.json()) as Record<string, unknown>;
+      } catch {
+        /* ignore */
       }
-      const data = (await res.json()) as ProcessPayload;
-      setPayload(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Fallo de red.");
-    } finally {
-      setBusy(false);
+      if (!res.ok) {
+        const userMessage =
+          typeof body.user_message === "string"
+            ? body.user_message
+            : `Error ${res.status}`;
+        const requestId = typeof body.request_id === "string" ? body.request_id : "";
+        const err: ApiErrorPayload = {
+          error_code: typeof body.error_code === "string" ? body.error_code : "UNKNOWN",
+          user_message: userMessage,
+          request_id: requestId,
+        };
+        if (import.meta.env.DEV && typeof body.technical_details === "string") {
+          err.technical_details = body.technical_details;
+        }
+        setServerError(err);
+        setPhase("error");
+        return;
+      }
+      setPayload(body as unknown as ProcessPayload);
+      setPhase("success");
+    } catch {
+      setServerError({
+        error_code: "NETWORK",
+        user_message: "Fallo de red. Comprueba tu conexión.",
+        request_id: "",
+      });
+      setPhase("error");
     }
-  };
+  }, []);
 
   const pick = () => inputRef.current?.click();
 
-  const onInputChange = useCallback(async (ev: React.ChangeEvent<HTMLInputElement>) => {
-    const file = ev.target.files?.[0];
-    ev.target.value = "";
-    if (file) {
-      setFileLabel(file.name);
-      await upload(file);
-    }
-  }, []);
+  const onInputChange = useCallback(
+    async (ev: React.ChangeEvent<HTMLInputElement>) => {
+      const file = ev.target.files?.[0];
+      ev.target.value = "";
+      if (file) {
+        setFileLabel(file.name);
+        setLocalError(null);
+        await upload(file);
+      }
+    },
+    [upload],
+  );
 
   const onDrop = useCallback(
     async (ev: React.DragEvent) => {
@@ -82,16 +117,34 @@ export function App() {
       setDragFocus(false);
       const file = ev.dataTransfer.files?.[0];
       if (!file?.name.endsWith(".docx")) {
-        setError("Solo archivos .docx");
+        setLocalError("Solo archivos .docx");
+        setPhase("error");
         return;
       }
       setFileLabel(file.name);
+      setLocalError(null);
       await upload(file);
     },
-    [],
+    [upload],
   );
 
+  const retryLast = useCallback(async () => {
+    const f = lastFileRef.current;
+    if (!f) return;
+    await upload(f);
+  }, [upload]);
+
+  const copyRequestId = useCallback(async (rid: string) => {
+    if (!rid) return;
+    try {
+      await navigator.clipboard.writeText(rid);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const baseForDownloads = payload?.output_base_name ?? "acta";
+  const showErrorCard = (serverError && phase === "error") || (localError && phase === "error");
 
   return (
     <div className="app">
@@ -125,23 +178,47 @@ export function App() {
         </div>
       </div>
 
-      {busy && (
-        <p className="status working">Generando acta… (puede tardar un minuto)</p>
+      {phase === "uploading" && (
+        <p className="status working">Subiendo archivo…</p>
       )}
-      {!busy && fileLabel && !error && payload && (
+      {phase === "processing" && (
+        <p className="status working">Estructurando con IA, ~10–20s</p>
+      )}
+
+      {phase === "success" && fileLabel && (
         <p className="status">
           Listo — <strong>{fileLabel}</strong>
         </p>
       )}
-      {!busy && error && (
-        <p className="status">
-          <span className="error" style={{ display: "block", marginTop: "1rem" }}>
-            {error}
-          </span>
-        </p>
+
+      {showErrorCard && (
+        <div className="warn-banner" role="alert">
+          <p className="warn-banner-text">{serverError?.user_message ?? localError}</p>
+          {serverError?.request_id ? (
+            <div className="warn-banner-row">
+              <span className="warn-meta">ID: {serverError.request_id}</span>
+              <button
+                type="button"
+                className="secondary small"
+                onClick={() => copyRequestId(serverError.request_id)}
+              >
+                Copiar request_id
+              </button>
+              <button type="button" className="secondary small" onClick={retryLast}>
+                Reintentar
+              </button>
+            </div>
+          ) : null}
+          {import.meta.env.DEV && serverError?.technical_details ? (
+            <details className="dev-technical">
+              <summary>technical_details (solo desarrollo)</summary>
+              <pre>{serverError.technical_details}</pre>
+            </details>
+          ) : null}
+        </div>
       )}
 
-      {payload && (
+      {payload && phase === "success" && (
         <div className="row actions" style={{ marginTop: "1.25rem" }}>
           <button
             type="button"
@@ -169,7 +246,7 @@ export function App() {
         </div>
       )}
 
-      {payload && (
+      {payload && phase === "success" && (
         <section className="meta">
           <details>
             <summary>Metadatos extraídos</summary>

@@ -1,10 +1,20 @@
 import json
+import logging
 import os
+from typing import Any
 
 from dotenv import load_dotenv
-from groq import Groq
+from groq import APIConnectionError, BadRequestError, Groq, RateLimitError
+from pydantic import ValidationError
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_chain
+from tenacity.wait import wait_fixed
+
+from src.aliases import post_process_acta
+from src.schemas import ActaSchema
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = """\
 You are an assistant that structures meeting summaries into JSON.
@@ -78,6 +88,129 @@ Do not emit placeholder clocks like "00:00:00". "objetivo" must be one sentence 
 _MODEL = "llama-3.3-70b-versatile"
 
 
+def _first_balanced_json_object(text: str) -> str | None:
+    start = text.find("{")
+    if start == -1:
+        return None
+    depth = 0
+    in_string = False
+    escape = False
+    for i in range(start, len(text)):
+        c = text[i]
+        if in_string:
+            if escape:
+                escape = False
+            elif c == "\\":
+                escape = True
+            elif c == '"':
+                in_string = False
+            continue
+        if c == '"':
+            in_string = True
+        elif c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : i + 1]
+    return None
+
+
+def _strip_markdown_fences(s: str) -> str:
+    t = s.strip()
+    if not (t.startswith("```") and t.endswith("```")):
+        return t
+    inner = t[:-3].rstrip()
+    if inner.startswith("```json"):
+        return inner[7:].lstrip().rstrip()
+    if inner.startswith("```"):
+        return inner[3:].lstrip().rstrip()
+    return t
+
+
+def _extract_json(raw: str) -> dict[str, Any]:
+    s = (raw or "").strip()
+    candidate = _strip_markdown_fences(s)
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError:
+        pass
+    for blob in (
+        _first_balanced_json_object(candidate),
+        _first_balanced_json_object(s),
+    ):
+        if blob:
+            try:
+                return json.loads(blob)
+            except json.JSONDecodeError:
+                continue
+    raise ValueError(raw)
+
+
+def parse_json_blob(raw: str) -> dict[str, Any]:
+    """Best-effort parse of a model string into JSON (jueces, herramientas)."""
+    return _extract_json(raw)
+
+
+class _LastRaw:
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        self.value = ""
+
+
+def _before_sleep_log(retry_state: Any) -> None:
+    holder = retry_state.kwargs.get("last_raw_holder")
+    raw = holder.value if holder else ""
+    logger.warning(
+        "Groq parse attempt failed (model=%s, raw_len=%s, raw_preview=%r)",
+        _MODEL,
+        len(raw),
+        raw[:200],
+    )
+
+
+def _should_retry(exc: BaseException) -> bool:
+    return isinstance(exc, (ValueError, RateLimitError, APIConnectionError))
+
+
+@retry(
+    retry=retry_if_exception(_should_retry),
+    stop=stop_after_attempt(3),
+    wait=wait_chain(wait_fixed(1), wait_fixed(2)),
+    before_sleep=_before_sleep_log,
+    reraise=True,
+)
+def _chat_completion_parse(
+    client: Groq,
+    messages: list[dict[str, str]],
+    *,
+    last_raw_holder: _LastRaw,
+) -> dict[str, Any]:
+    try:
+        response = client.chat.completions.create(
+            model=_MODEL,
+            temperature=0.2,
+            max_tokens=2000,
+            messages=messages,
+            response_format={"type": "json_object"},
+        )
+    except BadRequestError:
+        raise
+    raw = response.choices[0].message.content or ""
+    last_raw_holder.value = raw
+    return _extract_json(raw)
+
+
+def _schema_retry_errors(exc: ValidationError) -> str:
+    return json.dumps(exc.errors(), ensure_ascii=False)
+
+
+def _validated_and_post_process(data: dict[str, Any]) -> dict[str, Any]:
+    validated = ActaSchema.model_validate(data).model_dump()
+    return post_process_acta(validated)
+
+
 def structure_meeting(
     raw_text: str,
     metadata: dict | None = None,
@@ -110,21 +243,28 @@ def structure_meeting(
             f"{source_filename}\n(Solo referencia; horas explícitas en METADATA tienen prioridad.)\n"
         )
 
-    response = client.chat.completions.create(
-        model=_MODEL,
-        temperature=0.2,
-        max_tokens=2000,
-        messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": user_body},
-        ],
-    )
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": _SYSTEM_PROMPT},
+        {"role": "user", "content": user_body},
+    ]
 
-    content = response.choices[0].message.content
+    holder = _LastRaw()
+    data = _chat_completion_parse(client, messages, last_raw_holder=holder)
 
     try:
-        return json.loads(content)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Model returned invalid JSON: {e}\n--- Raw response ---\n{content}"
-        ) from e
+        return _validated_and_post_process(data)
+    except ValidationError as ve:
+        fix_messages: list[dict[str, str]] = [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {
+                "role": "system",
+                "content": (
+                    "Tu respuesta anterior tenía estos errores de schema: "
+                    f"{_schema_retry_errors(ve)}. Devuelve SOLO el JSON corregido."
+                ),
+            },
+            {"role": "user", "content": user_body},
+        ]
+        holder2 = _LastRaw()
+        data2 = _chat_completion_parse(client, fix_messages, last_raw_holder=holder2)
+        return _validated_and_post_process(data2)

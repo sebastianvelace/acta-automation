@@ -5,6 +5,7 @@ import time
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
+from src.exceptions import ActaError
 from src.pipeline import run_acta_pipeline
 
 _INPUT_DIR = "input"
@@ -29,6 +30,8 @@ class DocxHandler(FileSystemEventHandler):
         if event.src_path.endswith(".docx"):
             try:
                 process_file(event.src_path)
+            except ActaError as e:
+                print(f"Error processing {event.src_path}: {e.user_message}")
             except Exception as e:
                 print(f"Error processing {event.src_path}: {e}")
 

@@ -6,3 +6,7 @@ watchdog
 fastapi
 uvicorn[standard]
 python-multipart
+tenacity
+pydantic
+pytest
+pyyaml

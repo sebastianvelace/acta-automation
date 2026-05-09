@@ -1,0 +1,21 @@
+{
+  "titulo": "Fixture Acta Case 04 Diseño Producto",
+  "fecha": "3 de agosto de 2026",
+  "hora_inicio": "10:00 AM",
+  "hora_fin": "No especificada",
+  "lugar": "No especificada",
+  "cliente": "Diseño y Producto",
+  "objetivo": "Coordinar entregables de diseño y roadmap.",
+  "asistentes": [
+    {"nombre": "Diseño Gorila Hosting", "puesto": "No especificado"},
+    {"nombre": "Producto Gorila Hosting", "puesto": "No especificado"},
+    {"nombre": "Gorila Hosting", "puesto": "No especificado"}
+  ],
+  "asuntos_tratados": [
+    {"titulo": "1. UX", "descripcion": "Avance de prototipos."}
+  ],
+  "compromisos_gorila": [
+    {"tarea": "Entregar mockups", "responsable": "Diseño Gorila Hosting"}
+  ],
+  "compromisos_cliente": []
+}
