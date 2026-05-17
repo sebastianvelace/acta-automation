@@ -5,6 +5,7 @@ Shared acta generation pipeline (file watcher CLI and HTTP API).
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import time
 from typing import Any, NotRequired, TypedDict
@@ -18,13 +19,32 @@ from src.exceptions import (
     RenderError,
     SchemaValidationError,
 )
+from src.aliases import compose_cliente_heading, finalize_acta_after_llm
 from src.generator import generate_acta
 from src.llm import structure_meeting
-from src.parser import extract_text
+from src.parser import extract_proximos_pasos_items, extract_text
 
 
 def slugify(text: str) -> str:
     return text.lower().replace(" ", "_")
+
+
+def _short_date(fecha: str) -> str:
+    """Return '14 de mayo' from '14 de mayo de 2026'."""
+    return re.sub(r"\s+de\s+\d{4}\s*$", "", fecha, flags=re.IGNORECASE).strip()
+
+
+def build_output_name(titulo: str, fecha: str, cliente: str = "") -> str:
+    """Build a human-readable filename without underscores.
+
+    Example: 'Acta revisión pauta real state 15 de mayo'
+    """
+    heading = compose_cliente_heading(titulo, cliente)
+    clean = re.sub(r"[-–—]", " ", heading)
+    clean = re.sub(r'[<>:"/\\|?*&]', "", clean)
+    clean = re.sub(r"\s+", " ", clean).strip().lower()
+    short = _short_date(fecha)
+    return f"Acta {clean} {short}"
 
 
 class ActaPipelineResult(TypedDict):
@@ -77,7 +97,15 @@ def run_acta_pipeline(
     except (RateLimitError, APIConnectionError, BadRequestError) as e:
         raise LLMExtractionError(technical_details=str(e)) from e
 
-    output_name = slugify(data["titulo"])
+    proximos = extract_proximos_pasos_items(parsed["raw_text"])
+    data = finalize_acta_after_llm(
+        data,
+        parsed["raw_text"],
+        proximos_items=proximos if proximos else None,
+        gorila_teams=parsed["metadata"].get("gorila_teams") or [],
+    )
+
+    output_name = build_output_name(data["titulo"], data["fecha"], data.get("cliente", ""))
 
     try:
         t0 = time.perf_counter()

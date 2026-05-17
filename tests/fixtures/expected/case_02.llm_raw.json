@@ -1,21 +1,44 @@
 {
-  "titulo": "Fixture Acta Case 02 Administración",
-  "fecha": "1 de junio de 2026",
-  "hora_inicio": "10:00 AM",
-  "hora_fin": "No especificada",
-  "lugar": "No especificada",
-  "cliente": "Administración - Cierre mensual",
-  "objetivo": "Cerrar temas administrativos del mes.",
-  "asistentes": [
-    {"nombre": "Administración Gorila Hosting", "puesto": "No especificado"},
-    {"nombre": "Redes Gorila Hosting", "puesto": "No especificado"},
-    {"nombre": "Cliente", "puesto": "empresa.co"}
-  ],
-  "asuntos_tratados": [
-    {"titulo": "1. Cierre", "descripcion": "Revisión de facturación y reportes."}
-  ],
-  "compromisos_gorila": [
-    {"tarea": "Subir reporte", "responsable": "Administración Gorila Hosting"}
-  ],
-  "compromisos_cliente": [{"tarea": "Aprobar factura", "responsable": "Cliente"}]
+    "titulo": "Fixture Acta Case 02 Administración",
+    "fecha": "1 de junio de 2026",
+    "hora_inicio": "10:00 AM",
+    "hora_fin": "No especificada",
+    "lugar": "No especificada",
+    "cliente": "Administración - Cierre mensual",
+    "objetivo": "Cerrar temas administrativos del mes.",
+    "cierre": "Administración revisará próximos cierres con reportes pactados.",
+    "asistentes": [
+        {
+            "nombre": "Administración Gorila Hosting",
+            "puesto": "No especificado"
+        },
+        {
+            "nombre": "Redes Gorila Hosting",
+            "puesto": "No especificado"
+        },
+        {
+            "nombre": "Cliente",
+            "puesto": "empresa.co"
+        }
+    ],
+    "asuntos_tratados": [
+        {
+            "titulo": "Cierre",
+            "descripcion": "Revisión de facturación y reportes."
+        }
+    ],
+    "compromisos_gorila": [
+        {
+            "tarea": "Subir reporte",
+            "responsable": "Administración Gorila Hosting",
+            "fecha_entrega": "No especificada"
+        }
+    ],
+    "compromisos_cliente": [
+        {
+            "tarea": "Aprobar factura",
+            "responsable": "Cliente",
+            "fecha_entrega": "No especificada"
+        }
+    ]
 }

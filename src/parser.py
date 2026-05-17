@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 from docx import Document
+
+from src.aliases import TEAM_ALIASES
 
 # Capture group for a time literal (allows optional am/pm or trailing "h")
 _TIME_CAPTURE = (
@@ -30,10 +32,91 @@ def _empty_metadata() -> dict[str, Any]:
     return {
         "date": "",
         "attendees": [],
+        "gorila_teams": [],
+        "client_emails": [],
         "hora_inicio": "",
         "hora_fin": "",
         "calendar_url": "",
     }
+
+
+class ProximoPasoItem(TypedDict):
+    tag: str
+    titulo_corto: str
+    descripcion: str
+
+
+_PROXIMO_PASO_LINE_RE = re.compile(
+    r"^\s*\[\s*([^\]]+?)\s*\]\s*([^:]+?):\s*(.+?)\s*$",
+)
+
+
+def extract_proximos_pasos_items(raw_text: str) -> list[ProximoPasoItem]:
+    """
+    Parse Gemini ``Próximos pasos`` lines:
+    ``[Tag] Título corto: descripción completa``.
+    """
+    m = re.search(
+        r"(?is)próximos\s+pasos\s*(.*?)(?=^\s*detalles\s*$|\Z)",
+        raw_text,
+        re.MULTILINE,
+    )
+    if not m:
+        return []
+    section = m.group(1)
+    items: list[ProximoPasoItem] = []
+    for line in section.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        mm = _PROXIMO_PASO_LINE_RE.match(line)
+        if mm:
+            items.append(
+                {
+                    "tag": mm.group(1).strip(),
+                    "titulo_corto": mm.group(2).strip(),
+                    "descripcion": mm.group(3).strip(),
+                }
+            )
+    return items
+
+
+_EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Za-z]{2,}")
+
+
+def _extract_gorila_team_labels(blob: str) -> list[str]:
+    """Ordered unique substring matches for known Gorila Hosting calendar labels."""
+    norm = " ".join(blob.split())
+    low = norm.casefold()
+    keys = [k for k in TEAM_ALIASES if "Gorila Hosting" in k and k != "Gorila Hosting"]
+    found: list[str] = []
+    seen_cf: set[str] = set()
+    for key in sorted(keys, key=len, reverse=True):
+        kf = key.casefold()
+        if kf in low and kf not in seen_cf:
+            found.append(key)
+            seen_cf.add(kf)
+    # Bare "Gorila Hosting" only if no specific team was found
+    if "gorila hosting" in low and not found:
+        bare = "Gorila Hosting"
+        if bare in TEAM_ALIASES:
+            found.append(bare)
+    return found
+
+
+def _parse_invite_blob(blob: str) -> tuple[list[str], list[str], list[str]]:
+    """
+    From Gemini ``Invitado`` line: return (attendee_display_parts, gorila_teams, client_emails).
+    """
+    blob = " ".join(blob.strip().split())
+    if not blob:
+        return [], [], []
+    emails = list(dict.fromkeys(_EMAIL_RE.findall(blob)))
+    gorila_teams = _extract_gorila_team_labels(blob)
+    parts: list[str] = []
+    parts.extend(gorila_teams)
+    parts.extend(emails)
+    return parts, gorila_teams, emails
 
 
 def _extract_header_date(lines: list[str]) -> str:
@@ -57,11 +140,14 @@ def _extract_attendees_between_markers(full_text: str) -> list[str]:
         return []
 
     blob = m.group(1).strip().replace("\r\n", "\n").replace("\r", "\n")
-    parts = re.split(r"[,;\n]+", blob)
+    parts, _, _ = _parse_invite_blob(blob)
+    if parts:
+        return parts
 
+    legacy = re.split(r"[,;\n]+", blob)
     dedup: list[str] = []
-    seen = set()
-    for p in parts:
+    seen: set[str] = set()
+    for p in legacy:
         t = " ".join(p.split())
         if len(t) < 2:
             continue
@@ -69,12 +155,25 @@ def _extract_attendees_between_markers(full_text: str) -> list[str]:
         if k not in seen:
             seen.add(k)
             dedup.append(t)
-
-    # If split failed (single comma-free line), return whole trimmed blob once
     if not dedup and blob:
         dedup.append(" ".join(blob.split()))
-
     return dedup
+
+
+def fill_invite_metadata(meta: dict[str, Any], raw_text: str) -> None:
+    """Set ``gorila_teams`` and ``client_emails`` from the Invitado blob."""
+    m = re.search(
+        r"(?is)invitados?\s*[:\s]*(.{0,8000}?)(?=archivos\s+adjuntos)",
+        raw_text,
+    )
+    if not m:
+        meta["gorila_teams"] = []
+        meta["client_emails"] = []
+        return
+    blob = m.group(1).strip().replace("\r\n", "\n").replace("\r", "\n")
+    _, teams, emails = _parse_invite_blob(blob)
+    meta["gorila_teams"] = teams
+    meta["client_emails"] = emails
 
 
 def _extract_calendar_url(full_text: str) -> str:
@@ -167,6 +266,7 @@ def extract_text(docx_path: str) -> dict[str, Any]:
     meta = _empty_metadata()
     meta["date"] = _extract_header_date(raw_lines)
     meta["attendees"] = _extract_attendees_between_markers(raw_text)
+    fill_invite_metadata(meta, raw_text)
     meta["calendar_url"] = _extract_calendar_url(raw_text)
 
     body_ini, body_fin = _extract_hora_from_body(raw_text)

@@ -1,21 +1,38 @@
 {
-  "titulo": "Fixture Acta Case 05 Portal",
-  "fecha": "9 de septiembre de 2026",
-  "hora_inicio": "10:00 AM",
-  "hora_fin": "No especificada",
-  "lugar": "No especificada",
-  "cliente": "Portal cliente",
-  "objetivo": "Sincronizar portal y material del cliente.",
-  "asistentes": [
-    {"nombre": "Eventos y Matrominios Portal", "puesto": "No especificado"},
-    {"nombre": "Eventos & Matrimonios Portal", "puesto": "No especificado"},
-    {"nombre": "Ana Garcia", "puesto": "cliente.com"}
-  ],
-  "asuntos_tratados": [
-    {"titulo": "1. Portal", "descripcion": "Ajustes de contenido publicado."}
-  ],
-  "compromisos_gorila": [
-    {"tarea": "Corregir bug listado", "responsable": "Soporte Gorila Hosting"}
-  ],
-  "compromisos_cliente": []
+    "titulo": "Fixture Acta Case 05 Portal",
+    "fecha": "9 de septiembre de 2026",
+    "hora_inicio": "10:00 AM",
+    "hora_fin": "No especificada",
+    "lugar": "No especificada",
+    "cliente": "Portal cliente",
+    "objetivo": "Sincronizar portal y material del cliente.",
+    "cierre": "Portal queda pendiente QA final según soporte cliente.",
+    "asistentes": [
+        {
+            "nombre": "Eventos y Matrominios Portal",
+            "puesto": "No especificado"
+        },
+        {
+            "nombre": "Eventos & Matrimonios Portal",
+            "puesto": "No especificado"
+        },
+        {
+            "nombre": "Ana Garcia",
+            "puesto": "cliente.com"
+        }
+    ],
+    "asuntos_tratados": [
+        {
+            "titulo": "Portal",
+            "descripcion": "Ajustes de contenido publicado."
+        }
+    ],
+    "compromisos_gorila": [
+        {
+            "tarea": "Corregir bug listado",
+            "responsable": "Soporte Gorila Hosting",
+            "fecha_entrega": "No especificada"
+        }
+    ],
+    "compromisos_cliente": []
 }

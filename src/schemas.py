@@ -16,6 +16,7 @@ class AsuntoSchema(BaseModel):
 class CompromisoSchema(BaseModel):
     tarea: str
     responsable: str
+    fecha_entrega: str = Field(default="No especificada")
 
 
 class ActaSchema(BaseModel):
@@ -26,6 +27,7 @@ class ActaSchema(BaseModel):
     lugar: str
     cliente: str
     objetivo: str
+    cierre: str = Field(default="")
     asistentes: list[AsistenteSchema]
     asuntos_tratados: list[AsuntoSchema]
     compromisos_gorila: list[CompromisoSchema]

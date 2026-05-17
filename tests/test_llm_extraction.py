@@ -15,15 +15,24 @@ def _minimal_acta_payload() -> dict:
         "lugar": "Virtual",
         "cliente": "Cliente demo",
         "objetivo": "Alinear próximos pasos.",
+        "cierre": "Los equipos siguen reuniones próximas con entregables validados.",
         "asistentes": [{"nombre": "Ana", "puesto": "PM"}],
         "asuntos_tratados": [
             {"titulo": "1. Estado", "descripcion": "Se revisó el estado del proyecto."}
         ],
         "compromisos_gorila": [
-            {"tarea": "Enviar informe", "responsable": "Marketing"}
+            {
+                "tarea": "Enviar informe",
+                "responsable": "Marketing Gorila Hosting",
+                "fecha_entrega": "No especificada",
+            }
         ],
         "compromisos_cliente": [
-            {"tarea": "Revisar propuesta", "responsable": "Cliente"}
+            {
+                "tarea": "Revisar propuesta",
+                "responsable": "Cliente",
+                "fecha_entrega": "No especificada",
+            }
         ],
     }
 
@@ -72,7 +81,7 @@ def test_extract_json_after_preamble(monkeypatch: pytest.MonkeyPatch) -> None:
 
     out = structure_meeting("cuerpo", metadata=None, source_filename="x.docx")
 
-    assert out["cliente"] == payload["cliente"]
+    assert out["cliente"] == "Reunión de prueba - Cliente demo"
     assert len(out["compromisos_gorila"]) == 1
 
 

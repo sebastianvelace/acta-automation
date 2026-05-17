@@ -13,14 +13,15 @@ Los datos provienen del JSON del acta (mismos nombres de clave). Aplica los camb
 | `{{ hora_final }}` | Duplicado de `hora_fin` si la plantilla lo usa (el generador lo rellena) |
 | `{{ lugar }}` | Lugar (suele ser vacío o `No especificada` en notas Gemini) |
 | `{{ cliente }}` | Nombre completo de la reunión / cliente |
-| `{{ objetivo }}` | Objetivo en una frase |
+| `{{ objetivo }}` | Objetivo (uno o más enunciados) |
+| `{{ cierre }}` | Resumen de cierre: acuerdos y conclusiones finales |
 
 ## Listas (bucles típicos)
 
 - **`asistentes`**: cada item `nombre`, `puesto`. Tras el post-proceso por alias, equipos tipo "Marketing Gorila Hosting" quedan canónicos.
 - **`asuntos_tratados`**: `titulo`, `descripcion`.
-- **`compromisos_gorila`**: `tarea`, `responsable`.
-- **`compromisos_cliente`**: `tarea`, `responsable`.
+- **`compromisos_gorila`**: `tarea`, `responsable`, `fecha_entrega`.
+- **`compromisos_cliente`**: `tarea`, `responsable`, `fecha_entrega`.
 
 ## Condicionales recomendados (editar en la .docx)
 

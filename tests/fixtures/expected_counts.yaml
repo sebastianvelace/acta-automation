@@ -3,8 +3,8 @@
 # Ajusta los números según tus 5 golden reales.
 
 case_01:
-  compromisos_gorila: 1
-  compromisos_cliente: 0
+  compromisos_gorila: 3
+  compromisos_cliente: 2
 
 case_02:
   compromisos_gorila: 1
