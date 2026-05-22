@@ -21,6 +21,11 @@ from src.exceptions import (
 )
 from src.aliases import compose_cliente_heading, finalize_acta_after_llm
 from src.generator import generate_acta
+from src.google_workflow import (
+    apply_metadata_times_to_acta,
+    calendar_enrich_metadata,
+    drive_upload_pdf_if_configured,
+)
 from src.llm import structure_meeting
 from src.parser import extract_proximos_pasos_items, extract_text
 
@@ -53,6 +58,7 @@ class ActaPipelineResult(TypedDict):
     output_name: str
     pdf_path: str
     docx_path: str | None
+    drive_web_link: NotRequired[str | None]
     timings: NotRequired[dict[str, float]]
 
 
@@ -74,6 +80,7 @@ def run_acta_pipeline(
     try:
         t0 = time.perf_counter()
         parsed = extract_text(input_docx_path)
+        parsed["metadata"] = calendar_enrich_metadata(parsed["metadata"])
         if timings is not None:
             timings["parse"] = time.perf_counter() - t0
     except Exception as e:
@@ -102,8 +109,10 @@ def run_acta_pipeline(
         data,
         parsed["raw_text"],
         proximos_items=proximos if proximos else None,
-        gorila_teams=parsed["metadata"].get("gorila_teams") or [],
+        metadata=parsed["metadata"],
     )
+
+    data = apply_metadata_times_to_acta(data, parsed["metadata"])
 
     output_name = build_output_name(data["titulo"], data["fecha"], data.get("cliente", ""))
 
@@ -139,6 +148,9 @@ def run_acta_pipeline(
         "pdf_path": pdf_path,
         "docx_path": docx_path,
     }
+    drive_link = drive_upload_pdf_if_configured(pdf_path, os.path.basename(pdf_path))
+    if drive_link:
+        result["drive_web_link"] = drive_link
     if timings is not None:
         result["timings"] = dict(timings)
     return result

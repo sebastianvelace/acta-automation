@@ -1,0 +1,116 @@
+[
+  {
+    "label": "Ana Maria",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 1,
+      "got_cliente": 4,
+      "exp_gorila": 1,
+      "exp_cliente": 4
+    },
+    "cliente": "Seguimiento - Ana Maria Psicología",
+    "lugar": "Google Meet",
+    "invitados_n": 1
+  },
+  {
+    "label": "Universal Campañas",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 4,
+      "got_cliente": 0,
+      "exp_gorila": 4,
+      "exp_cliente": 0
+    },
+    "cliente": "Revisión Campañas - Universal Academia de Idiomas",
+    "lugar": "No especificada",
+    "invitados_n": 5
+  },
+  {
+    "label": "Marlon",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 2,
+      "got_cliente": 2,
+      "exp_gorila": 2,
+      "exp_cliente": 2
+    },
+    "cliente": "Seguimiento Marlon Becerra a.",
+    "lugar": "Google Meet",
+    "invitados_n": 5
+  },
+  {
+    "label": "Sambal",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 2,
+      "got_cliente": 2,
+      "exp_gorila": 2,
+      "exp_cliente": 2
+    },
+    "cliente": "Revisión Pauta - Sambal",
+    "lugar": "No especificada",
+    "invitados_n": 4
+  },
+  {
+    "label": "Universal Dashboard",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 3,
+      "got_cliente": 0,
+      "exp_gorila": 3,
+      "exp_cliente": 0
+    },
+    "cliente": "Actualización Dashboard - Universal",
+    "lugar": "No especificada",
+    "invitados_n": 6
+  },
+  {
+    "label": "Barrera",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 1,
+      "got_cliente": 2,
+      "exp_gorila": 1,
+      "exp_cliente": 2
+    },
+    "cliente": "Seguimiento Barrera Estrada",
+    "lugar": "Google Meet",
+    "invitados_n": 6
+  }
+]

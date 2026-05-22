@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from typing import Any
 
 from dotenv import load_dotenv
@@ -10,6 +11,7 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_chain
 from tenacity.wait import wait_fixed
 
 from src.aliases import post_process_acta
+from src.parser import count_detalles_blocks
 from src.schemas import ActaSchema
 
 load_dotenv()
@@ -27,9 +29,11 @@ OUTPUT FORMAT
 - Populate every schema key listed below — never omit a key.
 - EVERY compromiso object MUST include fecha_entrega. Use prose like "viernes 23 de mayo de 2026" when explicit;
   otherwise exactly "No especificada".
+- NOTE: If the user message says Próximos pasos were parsed deterministically, focus on objetivo, asuntos_tratados
+  and cierre; compromisos in your JSON may be overwritten by post-processing.
 
 SOURCE PRIORITY
-1. NOTAS COMPLETAS DE LA REUNIÓN — authoritative for cliente/título efectivo de la reunión, roles de asistentes,
+1. NOTAS COMPLETAS DE LA REUNIÓN — authoritative for cliente/título efectivo de la reunión,
    coverage temática completa y síntesis de compromisos.
 2. METADATA EXTRAÍDO — preferred for fecha literal and horas de calendario when present/coherent.
 3. Nombre del archivo de origen — **último recurso solo** si el cliente/título jamás aparece en notas/metadata.
@@ -44,52 +48,48 @@ MAPPING (Spanish acta headings → JSON)
   NO inventes prefijos desde el archivo si las notas traen otro cliente.
 - **Objetivo** → objetivo — empieza con **verbo en infinitivo** (ej. «Definir…», «Revisar…»); 1 a 3 oraciones sobre el porqué y el alcance.
 - **Asuntos tratados** → asuntos_tratados[]
-  CRITICAL: Ancla los temas en la sección **Detalles** (o cuerpo equivalente) de las notas. NO repitas como asunto aparte un bullet que sea solo eco del **Resumen** si el mismo matiz ya está desarrollado en **Detalles**.
-  Lista **cada tema sustantivo diferente** que aparezca en **Detalles**; cuando las notas usan líneas tipo «Tema: párrafo», un asunto por bloque con título breve coherente con el primer sustantivo.
+  CRITICAL: Usa EXCLUSIVAMENTE la sección **Detalles** como fuente de asuntos_tratados.
+  NUNCA generes asuntos a partir del bloque «Resumen» breve que aparece antes de Próximos pasos
+  (el Resumen es solo un eco condensado de lo que ya está en Detalles; incluirlo genera duplicados).
+  Si el mensaje de usuario indica ``DETALLES: N bloques detectados``, produce **entre N y N+2 asuntos**
+  (máximo 8 salvo que Detalles tenga más de 8 bloques explícitos).
+  Un tema que aparezca en el Resumen Y en Detalles cuenta UNA sola vez, tomado de Detalles.
   Incluye **nombres propios** en la descripción cuando las notas los mencionen (no los borres).
   Por ítem:
-  • titulo — encabezado corto SIN número (ej. “Revisión técnica de reportes”, “Migración a Power BI”). El documento añade la numeración automáticamente; NUNCA incluyas “1.”, “2.”, etc. al inicio.
-  • descripcion — párrafos desarrollados (2 a 6 oraciones) con decisiones, plataformas, problemas mencionados, acuerdos y matices; evita telegramas sin contexto.
+  • titulo — encabezado corto SIN número. El documento añade la numeración automáticamente; NUNCA incluyas "1.", "2.", etc. al inicio.
+  • descripcion — párrafos desarrollados (2 a 6 oraciones) con decisiones, plataformas, problemas mencionados, acuerdos y matices.
 
 - **Compromisos asumidos por Gorila** → compromisos_gorila[]
-  • La sección “Próximos pasos” de las notas es la FUENTE PRIMARIA para compromisos. NO omitas ningún ítem de esa sección.
-  • **Regla fija de cartera**: ``compromisos_gorila`` es SIEMPRE para **Gorila Hosting / Growfik** (equipos internos:
-    Marketing Gorila Hosting, Administración Gorila Hosting, Social Media Gorila Hosting, etc.).
-    ``compromisos_cliente`` es para la **cuenta/cliente** de la reunión (personas del cliente, consultores del cliente,
-    responsables externos que NO son equipos Gorila).
+  • **Regla fija de cartera**: ``compromisos_gorila`` es SIEMPRE para **equipos internos Gorila Hosting / Growfik**
+    (Marketing Gorila Hosting, personal @growfik.com, analistas Growfik, etc.).
+    **Growfik es marca del equipo Gorila; NUNCA asignes tareas Growfik/Gorila al cliente.**
+    ``compromisos_cliente`` es para la **cuenta/cliente** de la reunión.
   • Cuando las notas usan `[Nombre] Tarea: descripción`, clasifica por quién ejecuta:
-    - Etiquetas/equipos con “Gorila Hosting” o “Growfik” → compromisos_gorila; ``responsable`` = etiqueta del equipo.
-    - Nombres de personas del lado del cliente (propietarios, directores, consultores del cliente) → compromisos_cliente.
-    - Si el responsable es “[El grupo]” o “[Todos]” → **solo** ``compromisos_gorila`` (no en cliente); el sistema puede reemplazar el texto del responsable por equipos inferidos de la invitación.
-  • **Estilo ejecutivo/consolidado** cuando no haya lista explícita ``[Tag]`` …: fusiona bullets duplicadas del mismo frente.
-  • Mantén todas las obligaciones distintas; agrupa sólo donde la redundancia es obvia desde las notas.
+    - Etiquetas/equipos **Gorila Hosting** o personal interno Growfik/Gorila → compromisos_gorila.
+    - Personas claramente del **cliente** → compromisos_cliente; ``responsable`` = **empresa/cuenta**, NO la persona.
+    - "[El grupo]" / "[Todos]" → **solo** ``compromisos_gorila``.
   • NUNCA inventes compromisos que no estén explícitamente mencionados en las notas.
-- **Compromisos cliente** → compromisos_cliente[] — mismas reglas de atribución y consolidación.
-- **Cierre** → cierre — 2–4 oraciones sintetizando principales acuerdos, sensación de avance y qué debe ocurrir antes de próximos touchpoints.
+- **Compromisos cliente** → compromisos_cliente[] — mismas reglas de atribución.
+- **Cierre** → cierre — 2–4 oraciones que DEBEN incluir cuando aparezcan en las notas:
+  (1) principales acuerdos y sensación de avance;
+  (2) próxima reunión o touchpoint con **fecha/hora** si está en Próximos pasos;
+  (3) personas mencionadas con **apellido y rol/empresa** (no dejar "Pedro" sin contexto).
 
 ## fecha / hora_inicio / hora_fin (technical rules)
 - Use METADATA as **priority** for fecha, hora_inicio, hora_fin when values appear there coherently.
 - Always express fecha JSON as Spanish prose, e.g. "29 de abril de 2026" — NOT English variants like "Apr 29, 2026".
-- Normalize horas a reloj 12 h tipo "H:MM AM"/"HH:MM PM" usando hora singular 1–9 cuando aplique si ya traen AM/PM.
-- METADATA marcado "(no detectada)" or truly missing → derive from NOTAS (keywords como "Hora de inicio/fin", duraciones, agendas).
+- Normalize horas a reloj 12 h tipo "H:MM AM"/"HH:MM PM".
 - If still unknown definitivamente, output literally "No especificada".
 
-## asistentes (strict shape)
-Each item must be exactly: {"nombre": "...", "puesto": "..."}
-- Lista **solo personas reales** que participen según el **Detalle** de las notas (nombres y apellidos). Una fila por persona.
-- NO incluyas como filas: correos sueltos, cuentas genéricas (ej. ads@…), ni etiquetas sueltas tipo “Marketing Gorila Hosting” si ya identificaste **personas** del equipo interno en el detalle.
-- Para **personal de Gorila Hosting** cuya persona aparece en el detalle: ``puesto`` = rol/equipo breve (ej. “Marketing Gorila Hosting”, “Administración Gorila Hosting”) sin inventar cargos.
-- **Cliente / terceros**: ``puesto`` puede ser empresa o “Cliente”; usa lo que indiquen las notas.
-- METADATA “Invitado” es **orientativa** para equipos; no sustituye la lista final de personas cuando el detalle nombra a alguien.
-- "puesto" NO debe tener frases “Líder de …”; mejor rol/org conciso — si sólo aparece equipo, asígnalo ahí sin inventar cargos falsos.
+## invitados (strict shape)
+Each item must be exactly: {"correo": string, "puesto": string, "asistencia": string}
+- Devuelve **[]** (lista vacía). El sistema rellena invitados después.
 
 ## compromisos (shape + tagging)
 Each item MUST be: {"tarea": string, "responsable": string, "fecha_entrega": string}
-- Tagging **[Marketing Gorila Hosting]** u similar → compromisos_gorila; ``responsable`` = etiqueta completa del equipo.
-- Formato ``[Persona] Título: descripción`` → ``tarea`` = texto **completo** tras el primer ``:`` (descripción); nunca sustituyas por solo el título corto.
-- **``[El grupo]`` / ``[Todos]``** → solo ``compromisos_gorila`` (nunca en cliente).
-- Persona nombrada en el tag → ``compromisos_cliente`` aunque en la reunión sea colaborador de Gorila, salvo que el tag sea explícitamente un equipo Gorila Hosting.
-- "tarea" = QUÉ hacer; "responsable" = QUIÉN (equipo/persona) — jamás invertir columnas.
+- Personal interno Growfik/Gorila (incl. @growfik.com) → compromisos_gorila con nombre o equipo interno.
+- Persona del **cliente** → compromisos_cliente; ``responsable`` = **empresa/cuenta**, no la persona.
+- **``[El grupo]`` / ``[Todos]``** → solo ``compromisos_gorila``.
 
 ## Final JSON schema (exact keys / nesting)
 
@@ -102,7 +102,7 @@ Each item MUST be: {"tarea": string, "responsable": string, "fecha_entrega": str
   "cliente": string,
   "objetivo": string,
   "cierre": string,
-  "asistentes": [{"nombre": string, "puesto": string}],
+  "invitados": [{"correo": string, "puesto": string, "asistencia": string}],
   "asuntos_tratados": [{"titulo": string, "descripcion": string}],
   "compromisos_gorila": [{"tarea": string, "responsable": string, "fecha_entrega": string}],
   "compromisos_cliente": [{"tarea": string, "responsable": string, "fecha_entrega": string}]
@@ -113,11 +113,16 @@ Technical hygiene: NEVER fabricate timestamps like "00:00:00". Keep JSON strings
 
 # Salida JSON. En tier Groq on_demand (~12k TPM) el límite suele aplicar a prompt + max_tokens en la petición.
 _MAX_COMPLETION_TOKENS = 6144
-# Techo seguro: prompt (system+user) estimado + max_tokens por debajo del TPM de la organización.
 _GROQ_REQUEST_TOKEN_CEILING = 11_500
 
 _MODEL = "llama-3.3-70b-versatile"
-_CHARS_PER_TOKEN = 4  # rough estimate for Spanish text
+_CHARS_PER_TOKEN = 4
+
+_PROXIMOS_SECTION_RE = re.compile(
+    r"(?is)(próximos\s+pasos\s*.*?)(?=^\s*detalles\s*$|\Z)",
+    re.MULTILINE,
+)
+_DETALLES_SECTION_RE = re.compile(r"(?is)(detalles\s*.*)\Z")
 
 
 def _estimate_tokens(text: str) -> int:
@@ -125,14 +130,50 @@ def _estimate_tokens(text: str) -> int:
 
 
 def _trim_to_budget(raw_text: str, budget_tokens: int) -> str:
-    """Truncate keeping head (65 %) + tail (35 %) when over budget."""
+    """
+    Trunca preservando siempre Próximos pasos + Detalles completos;
+    recorta el prefijo (resumen/cabecera) si hace falta.
+    """
     if _estimate_tokens(raw_text) <= budget_tokens:
         return raw_text
+
     budget_chars = budget_tokens * _CHARS_PER_TOKEN
+    prox_m = _PROXIMOS_SECTION_RE.search(raw_text)
+    det_m = _DETALLES_SECTION_RE.search(raw_text)
+    prox = prox_m.group(1).strip() if prox_m else ""
+    det = det_m.group(1).strip() if det_m else ""
+    protected = "\n\n".join(part for part in (prox, det) if part)
+
+    if protected and len(protected) <= budget_chars:
+        prefix_end = prox_m.start() if prox_m else (det_m.start() if det_m else len(raw_text))
+        prefix = raw_text[:prefix_end].strip()
+        room = budget_chars - len(protected) - 80
+        if room > 0 and prefix:
+            if len(prefix) > room:
+                head = prefix[: room * 65 // 100].rstrip()
+                tail = prefix[-(room - len(head)) :].lstrip()
+                prefix = head + "\n\n[... contenido inicial omitido ...]\n\n" + tail
+        elif not prefix:
+            prefix = ""
+        result = "\n\n".join(part for part in (prefix, protected) if part)
+        logger.warning(
+            "raw_text truncado (secciones protegidas): %d chars → %d chars",
+            len(raw_text),
+            len(result),
+        )
+        return result
+
+    if _estimate_tokens(protected) > budget_tokens and det and len(det) > budget_chars // 2:
+        head_det = det[: budget_chars * 65 // 100]
+        tail_det = det[-(budget_chars * 35 // 100) :]
+        protected = head_det + "\n\n[... detalles omitidos ...]\n\n" + tail_det
+        logger.warning("raw_text truncado (solo Detalles): %d → %d chars", len(raw_text), len(protected))
+        return protected
+
     head = budget_chars * 65 // 100
     tail = budget_chars - head
     logger.warning(
-        "raw_text truncado: %d chars → %d chars (budget %d tokens)",
+        "raw_text truncado head/tail: %d chars → %d chars (budget %d tokens)",
         len(raw_text),
         head + tail,
         budget_tokens,
@@ -285,15 +326,25 @@ def structure_meeting(
     fecha_m = md.get("date") or "(no detectada)"
     hi_m = md.get("hora_inicio") or "(no detectada)"
     hf_m = md.get("hora_fin") or "(no detectada)"
+    det_chars, det_blocks = count_detalles_blocks(raw_text)
 
     meta_block = (
         "METADATA EXTRAÍDO DEL DOCUMENTO:\n"
         f"Fecha: {fecha_m}\n"
         f"Hora inicio detectada: {hi_m}\n"
         f"Hora fin detectada: {hf_m}\n"
-        f"Asistentes (display names): {att_join}\n"
+        f"Invitados (correos detectados): {att_join}\n"
         f"Equipos Gorila detectados en invitación: {teams_m}\n"
+        f"DETALLES: ~{det_chars} caracteres, {det_blocks} bloques/temas detectados "
+        f"(genera entre {det_blocks} y {det_blocks + 2} asuntos_tratados, SOLO desde Detalles).\n"
     )
+    if md.get("is_virtual"):
+        meta_block += "Lugar detectado: Google Meet (reunión virtual con grabación).\n"
+    if re.search(r"(?is)próximos\s+pasos", raw_text):
+        meta_block += (
+            "Próximos pasos detectados en notas: el post-proceso puede sobrescribir "
+            "compromisos_gorila/compromisos_cliente de forma determinística.\n"
+        )
     if md.get("calendar_url"):
         meta_block += f"URL calendario: {md['calendar_url']}\n"
 
@@ -303,15 +354,14 @@ def structure_meeting(
         tail = (
             "\n\n---\nNombre del archivo de origen: "
             f"{source_filename}\n"
-            "(Último recurso para cliente si no aparece en notas. METADATA tiene prioridad para fecha/horas; "
-            "asistentes, asuntos completos y consolidación de compromisos priorizando NOTAS COMPLETAS.)\n"
+            "(Último recurso para cliente si no aparece en notas. METADATA tiene prioridad para fecha/horas.)\n"
         )
 
     prompt_prefix_tokens = (
         _estimate_tokens(_SYSTEM_PROMPT)
         + _estimate_tokens(head)
         + _estimate_tokens(tail)
-        + 120  # slack
+        + 120
     )
     raw_budget = max(
         512,

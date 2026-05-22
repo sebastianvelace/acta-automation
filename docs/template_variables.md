@@ -18,7 +18,7 @@ Los datos provienen del JSON del acta (mismos nombres de clave). Aplica los camb
 
 ## Listas (bucles típicos)
 
-- **`asistentes`**: cada item `nombre`, `puesto`. Tras el post-proceso por alias, equipos tipo "Marketing Gorila Hosting" quedan canónicos.
+- **`invitados`**: cada item `correo` (email del .docx), `nombre` (roster Gorila, contacto cliente en `data/client_contacts.yaml`, o el correo si no hay match), `puesto` (cargo + «Gorila» para internos), `asistencia` (`Confirmado`). Lookup sin LLM. Personas internas en tags de Próximos pasos se añaden aunque no estén en Invitado.
 - **`asuntos_tratados`**: `titulo`, `descripcion`.
 - **`compromisos_gorila`**: `tarea`, `responsable`, `fecha_entrega`.
 - **`compromisos_cliente`**: `tarea`, `responsable`, `fecha_entrega`.
@@ -61,4 +61,5 @@ En tablas Word con `docxtpl`, envuelve la fila de caberca extra y las filas `{% 
 ## Notas
 
 - `No especificada` / `No especificado` son valores legales del modelo; usa comparación exacta en Jinja como arriba.
-- Tras normalizar asistentes, `puesto` de alias de equipo deja de ser ambiguo ("Gorila Hosting", "Equipo", etc.).
+- Tras el post-proceso, `invitados` se rellena por correos del bloque Invitado del documento.
+- El roster de integrantes Gorila (`data/gorila_staff.yaml`) define quién es personal interno para **compromisos**; editar ese YAML para altas/bajas.

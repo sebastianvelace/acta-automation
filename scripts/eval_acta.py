@@ -44,7 +44,7 @@ def _scalar_coverage_pct(acta: dict[str, Any]) -> float:
 
 
 def _attendees_puesto_inferred(acta: dict[str, Any]) -> tuple[int, int]:
-    rows = acta.get("asistentes") or []
+    rows = acta.get("invitados") or []
     inferred = 0
     for a in rows:
         if not isinstance(a, dict):

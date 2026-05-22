@@ -3,9 +3,11 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
-class AsistenteSchema(BaseModel):
-    nombre: str = Field(default="No especificado")
-    puesto: str = Field(default="No especificado")
+class InvitadoSchema(BaseModel):
+    correo: str = Field(default="")
+    nombre: str = Field(default="")
+    puesto: str = Field(default="")
+    asistencia: str = Field(default="Confirmado")
 
 
 class AsuntoSchema(BaseModel):
@@ -28,7 +30,7 @@ class ActaSchema(BaseModel):
     cliente: str
     objetivo: str
     cierre: str = Field(default="")
-    asistentes: list[AsistenteSchema]
+    invitados: list[InvitadoSchema]
     asuntos_tratados: list[AsuntoSchema]
     compromisos_gorila: list[CompromisoSchema]
     compromisos_cliente: list[CompromisoSchema]

@@ -6,7 +6,8 @@ from typing import Any, TypedDict
 
 from docx import Document
 
-from src.aliases import TEAM_ALIASES
+from src.aliases import TEAM_ALIASES, looks_like_person_name
+from src.gorila_roster import roster_emails
 
 # Capture group for a time literal (allows optional am/pm or trailing "h")
 _TIME_CAPTURE = (
@@ -14,7 +15,9 @@ _TIME_CAPTURE = (
     r"(?:\s*[ap]\.?\s*m\.?|\s*h\b)?)"
 )
 
-FILENAME_DATETIME_RE = re.compile(r"(20\d{2})_(\d{2})_(\d{2})_(\d{2})_(\d{2})")
+FILENAME_DATETIME_RE = re.compile(
+    r"(20\d{2})_(\d{2})_(\d{2})[_\s](\d{2})_(\d{2})"
+)
 
 CALENDAR_URL_RE = re.compile(
     r'(https?://(?:www\.)?calendar\.google\.com[^\s\)\]>\"\'<]+)',
@@ -33,11 +36,101 @@ def _empty_metadata() -> dict[str, Any]:
         "date": "",
         "attendees": [],
         "gorila_teams": [],
+        "attendee_emails": [],
+        "gorila_emails": [],
         "client_emails": [],
+        "gorila_person_names": [],
         "hora_inicio": "",
         "hora_fin": "",
         "calendar_url": "",
+        "is_virtual": False,
     }
+
+
+def _detect_virtual_meeting(full_text: str) -> bool:
+    """True when the document shows evidence of a virtual meeting (recording, Meet/Zoom link)."""
+    m = re.search(
+        r"(?is)archivos\s+adjuntos\s*(.{0,800}?)(?=registros\s+de\s+la\s+reuni[oó]n|\Z)",
+        full_text,
+    )
+    if m and "recording" in m.group(1).casefold():
+        return True
+    if re.search(r"(?i)meet\.google\.com|zoom\.us/j/", full_text):
+        return True
+    return False
+
+
+_GORILA_EMAIL_MARKERS = ("gorilahosting", "growfik")
+
+_GORILA_ROLE_IN_TEXT = (
+    r"(?:Marketing|Administración|Redes|Social Media|Executive|Soporte|Ventas|Diseño|Producto)"
+    r"\s+Gorila Hosting"
+)
+
+
+def is_gorila_email(email: str) -> bool:
+    """True for correos internos Gorila (dominio, roster o patrones legacy)."""
+    e = (email or "").casefold().strip()
+    if not e:
+        return False
+    if e.endswith("@gorila.hosting") or "@gorila.hosting" in e:
+        return True
+    if any(m in e for m in _GORILA_EMAIL_MARKERS):
+        return True
+    return e in roster_emails()
+
+
+_GORILA_PERSON_STOPWORDS = re.compile(
+    r"(?i)\b("
+    r"estado|gesti[oó]n|planificaci[oó]n|sitio|revisi[oó]n|entrega|proceso|equipo|"
+    r"contenido|parrilla|aniversario|aprobaci[oó]n|cronograma|respecto|marketing|"
+    r"administraci[oó]n|redes|social|media|executive|soporte|ventas|diseño|producto"
+    r")\b"
+)
+
+
+def _is_plausible_gorila_person_name(name: str) -> bool:
+    if not looks_like_person_name(name):
+        return False
+    if _GORILA_PERSON_STOPWORDS.search(name):
+        return False
+    tokens = name.split()
+    if len(tokens) < 2 or len(tokens) > 4:
+        return False
+    return True
+
+
+def extract_gorila_person_names(raw_text: str) -> list[str]:
+    """
+    Nombres de personas internas mencionadas en **Detalles** junto a un equipo Gorila Hosting.
+    """
+    m = re.search(r"(?is)detalles\s*(.*)", raw_text or "")
+    if not m:
+        return []
+    section = m.group(1)
+    patterns = (
+        re.compile(
+            rf"([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){{1,4}})\s*"
+            rf"\([^)]*{_GORILA_ROLE_IN_TEXT}[^)]*\)",
+            re.I,
+        ),
+        re.compile(
+            rf"([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){{1,3}})\s*"
+            rf"\([^)]*{_GORILA_ROLE_IN_TEXT}[^)]*\)",
+            re.I,
+        ),
+    )
+    found: list[str] = []
+    seen: set[str] = set()
+    for pat in patterns:
+        for match in pat.finditer(section):
+            name = " ".join(match.group(1).split())
+            key = name.casefold()
+            if key in seen or not _is_plausible_gorila_person_name(name):
+                continue
+            seen.add(key)
+            found.append(name)
+    return found
 
 
 class ProximoPasoItem(TypedDict):
@@ -161,19 +254,23 @@ def _extract_attendees_between_markers(full_text: str) -> list[str]:
 
 
 def fill_invite_metadata(meta: dict[str, Any], raw_text: str) -> None:
-    """Set ``gorila_teams`` and ``client_emails`` from the Invitado blob."""
+    """Set equipos Gorila y correos de invitados desde el bloque Invitado."""
     m = re.search(
         r"(?is)invitados?\s*[:\s]*(.{0,8000}?)(?=archivos\s+adjuntos)",
         raw_text,
     )
     if not m:
         meta["gorila_teams"] = []
+        meta["attendee_emails"] = []
+        meta["gorila_emails"] = []
         meta["client_emails"] = []
         return
     blob = m.group(1).strip().replace("\r\n", "\n").replace("\r", "\n")
     _, teams, emails = _parse_invite_blob(blob)
     meta["gorila_teams"] = teams
-    meta["client_emails"] = emails
+    meta["attendee_emails"] = emails
+    meta["gorila_emails"] = [e for e in emails if is_gorila_email(e)]
+    meta["client_emails"] = [e for e in emails if not is_gorila_email(e)]
 
 
 def _extract_calendar_url(full_text: str) -> str:
@@ -244,14 +341,40 @@ def _extract_hora_from_body(full_text: str) -> tuple[str, str]:
     return ini, fin
 
 
+def _format_hora_ampm(hour: int, minute: int) -> str:
+    """Reloj 12 h tipo '11:02 AM' / '4:07 PM'."""
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return ""
+    suffix = "AM" if hour < 12 else "PM"
+    h12 = hour % 12
+    if h12 == 0:
+        h12 = 12
+    return f"{h12}:{minute:02d} {suffix}"
+
+
 def _extract_times_from_filename(basename: str) -> tuple[str, str]:
     m = FILENAME_DATETIME_RE.search(basename)
     if not m:
         return "", ""
     h, mi = int(m.group(4)), int(m.group(5))
-    if not (0 <= h <= 23 and 0 <= mi <= 59):
-        return "", ""
-    return f"{h}:{mi:02d}", ""
+    formatted = _format_hora_ampm(h, mi)
+    return formatted, ""
+
+
+def count_detalles_blocks(raw_text: str) -> tuple[int, int]:
+    """
+    Estima cobertura de asuntos: (caracteres en Detalles, bloques/temas detectados).
+    """
+    m = re.search(r"(?is)detalles\s*(.*)", raw_text or "")
+    if not m:
+        return 0, 0
+    section = m.group(1).strip()
+    if not section:
+        return 0, 0
+    tema_lines = len(re.findall(r"(?im)^\s*[^:]+:\s*\S", section))
+    paragraphs = [p for p in re.split(r"\n\s*\n", section) if p.strip()]
+    blocks = max(tema_lines, len(paragraphs), 1) if section else 0
+    return len(section), blocks
 
 
 def extract_text(docx_path: str) -> dict[str, Any]:
@@ -267,7 +390,9 @@ def extract_text(docx_path: str) -> dict[str, Any]:
     meta["date"] = _extract_header_date(raw_lines)
     meta["attendees"] = _extract_attendees_between_markers(raw_text)
     fill_invite_metadata(meta, raw_text)
+    meta["gorila_person_names"] = extract_gorila_person_names(raw_text)
     meta["calendar_url"] = _extract_calendar_url(raw_text)
+    meta["is_virtual"] = _detect_virtual_meeting(raw_text)
 
     body_ini, body_fin = _extract_hora_from_body(raw_text)
     file_ini, _ = _extract_times_from_filename(os.path.basename(docx_path))

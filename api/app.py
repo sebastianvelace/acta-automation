@@ -179,13 +179,17 @@ async def process_meeting_notes(request: Request, file: UploadFile = File(...)):
             },
         )
 
-        return {
+        out: dict = {
             "metadata": result["metadata"],
             "acta": result["acta"],
             "output_base_name": result["output_name"],
             "pdf_base64": pdf_b64,
             "docx_base64": docx_b64,
         }
+        drive_link = result.get("drive_web_link")
+        if drive_link:
+            out["drive_web_link"] = drive_link
+        return out
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
         shutil.rmtree(outdir, ignore_errors=True)

@@ -7,16 +7,6 @@
     "cliente": "Seguimiento - Eventos & Matrimonios",
     "objetivo": "Revisar avance de piezas y contenido para redes.",
     "cierre": "Se cerró revisión inicial con acuerdos de entrega próximos.",
-    "asistentes": [
-        {
-            "nombre": "Social Media Gorila Hosting",
-            "puesto": "No especificado"
-        },
-        {
-            "nombre": "Marketing Gorila Hosting",
-            "puesto": "No especificado"
-        }
-    ],
     "asuntos_tratados": [
         {
             "titulo": "Estado",
@@ -30,5 +20,6 @@
             "fecha_entrega": "No especificada"
         }
     ],
-    "compromisos_cliente": []
+    "compromisos_cliente": [],
+    "invitados": []
 }

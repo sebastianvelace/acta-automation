@@ -10,3 +10,5 @@ tenacity
 pydantic
 pytest
 pyyaml
+google-api-python-client
+google-auth

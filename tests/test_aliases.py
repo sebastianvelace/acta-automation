@@ -4,6 +4,7 @@ import pytest
 
 from src.aliases import (
     TEAM_ALIASES,
+    client_account_responsable,
     compose_cliente_heading,
     is_gorila_responsable,
     lookup_team_alias,
@@ -47,7 +48,7 @@ def test_normalize_single_token_fallback() -> None:
     assert out["puesto"] == "No especificado"
 
 
-def test_post_process_rewrites_llm_asistente_row() -> None:
+def test_post_process_keeps_invitados_empty_from_llm() -> None:
     raw = {
         "titulo": "t",
         "fecha": "1",
@@ -57,15 +58,13 @@ def test_post_process_rewrites_llm_asistente_row() -> None:
         "cliente": "c",
         "objetivo": "o",
         "cierre": "",
-        "asistentes": [
-            {"nombre": "Social Media Gorila Hosting", "puesto": "No especificado"}
-        ],
+        "invitados": [],
         "asuntos_tratados": [{"titulo": "a", "descripcion": "b"}],
         "compromisos_gorila": [],
         "compromisos_cliente": [],
     }
     out = post_process_acta(raw)
-    assert out["asistentes"][0] == {"nombre": "Social Media", "puesto": "Gorila Hosting"}
+    assert out["invitados"] == []
 
 
 def test_lookup_team_alias_unknown() -> None:
@@ -93,20 +92,45 @@ def test_is_gorila_responsable_team_alias() -> None:
     assert not is_gorila_responsable("Eventos y Matrominios Portal")
 
 
-def test_reclassify_moves_person_to_cliente() -> None:
-    gorila, cliente = reclassify_compromisos(
+def test_reclassify_normalizes_legacy_growfik_label() -> None:
+    gorila, _ = reclassify_compromisos(
         [
             {
-                "tarea": "Formalizar estrategia",
-                "responsable": "Marco Gonzalez",
+                "tarea": "Enviar informe",
+                "responsable": "[Marketing Growfik]",
                 "fecha_entrega": "No especificada",
             }
         ],
         [],
     )
+    assert len(gorila) == 1
+    assert "growfik" not in gorila[0]["responsable"].casefold()
+    assert gorila[0]["responsable"] == "Marketing Gorila Hosting"
+
+
+def test_reclassify_moves_person_to_cliente() -> None:
+    gorila, cliente = reclassify_compromisos(
+        [],
+        [
+            {
+                "tarea": "Formalizar estrategia",
+                "responsable": "Pedro Cliente Externo",
+                "fecha_entrega": "No especificada",
+            }
+        ],
+        cliente_responsable="Real State",
+    )
     assert gorila == []
     assert len(cliente) == 1
-    assert cliente[0]["responsable"] == "Marco Gonzalez"
+    assert cliente[0]["responsable"] == "Real State"
+
+
+def test_client_account_responsable_extracts_account_suffix() -> None:
+    assert client_account_responsable("Revisión Pauta - Real State", "Revisión Pauta") == "Real State"
+    assert (
+        client_account_responsable("Seguimiento - Eventos & Matrimonios")
+        == "Eventos & Matrimonios"
+    )
 
 
 def test_reclassify_group_only_gorila() -> None:
@@ -132,7 +156,7 @@ def test_post_process_compromisos_real_state_scenario() -> None:
         "cliente": "Real State",
         "objetivo": "o",
         "cierre": "",
-        "asistentes": [],
+        "invitados": [],
         "asuntos_tratados": [{"titulo": "a", "descripcion": "b"}],
         "compromisos_gorila": [
             {
@@ -153,12 +177,9 @@ def test_post_process_compromisos_real_state_scenario() -> None:
     }
     out = post_process_acta(raw, metadata=meta)
     assert out["cliente"] == "Revisión Pauta - Real State"
-    assert len(out["compromisos_gorila"]) == 1
-    assert out["compromisos_gorila"][0]["tarea"] == "Evaluar portales"
-    assert (
-        out["compromisos_gorila"][0]["responsable"]
-        == "Marketing & Administración Gorila Hosting"
-    )
-    assert len(out["compromisos_cliente"]) == 1
-    assert out["compromisos_cliente"][0]["tarea"] == "Formalizar estrategia"
-    assert out["compromisos_cliente"][0]["responsable"] == "Marco Gonzalez"
+    assert len(out["compromisos_gorila"]) == 2
+    marco_row = next(r for r in out["compromisos_gorila"] if r["tarea"] == "Formalizar estrategia")
+    assert marco_row["responsable"] == "Marco Gonzalez"
+    eval_row = next(r for r in out["compromisos_gorila"] if r["tarea"] == "Evaluar portales")
+    assert eval_row["responsable"] == "Marketing & Administración Gorila Hosting"
+    assert len(out["compromisos_cliente"]) == 0

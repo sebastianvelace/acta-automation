@@ -1,0 +1,17 @@
+# Contactos de clientes conocidos por correo (enriquecimiento de invitados, sin LLM).
+contacts:
+  - email: samuel.villalobos@universal.edu.co
+    name: Samuel Villalobos
+    role: Líder digital Universal
+
+  - email: anama1310@hotmail.com
+    name: Ana Maria Ramirez
+    role: Ana Maria Psicología
+
+  - email: barreraestradaabogados@gmail.com
+    name: Barrera Estrada Abogados
+    role: Cuenta corporativa
+
+  - email: enythelvira@gmail.com
+    name: Enythelvira
+    role: Barrera Estrada Abogados

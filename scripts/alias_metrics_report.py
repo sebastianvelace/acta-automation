@@ -28,10 +28,10 @@ def _count_placeholders(acta: dict) -> tuple[int, int]:
         v = acta.get(key)
         if isinstance(v, str) and v in _PLACE:
             matches += 1
-    for a in acta.get("asistentes") or []:
+    for a in acta.get("invitados") or []:
         if not isinstance(a, dict):
             continue
-        for key in ("nombre", "puesto"):
+        for key in ("correo", "puesto"):
             total += 1
             v = a.get(key)
             if isinstance(v, str) and v in _PLACE:
@@ -42,10 +42,10 @@ def _count_placeholders(acta: dict) -> tuple[int, int]:
 def _benefit_count_before_after(raw: dict) -> int:
     """Asistentes cuyo nombre coincide con un alias de equipo (cuenta beneficiarios)."""
     before = 0
-    for a in raw.get("asistentes") or []:
+    for a in raw.get("invitados") or []:
         if not isinstance(a, dict):
             continue
-        n = (a.get("nombre") or "").strip()
+        n = (a.get("correo") or "").strip()
         if n and lookup_team_alias(n):
             before += 1
     return before
@@ -53,13 +53,13 @@ def _benefit_count_before_after(raw: dict) -> int:
 
 def _asistente_rows_changed(raw: dict, after: dict) -> int:
     c = 0
-    br = raw.get("asistentes") or []
-    ar = after.get("asistentes") or []
+    br = raw.get("invitados") or []
+    ar = after.get("invitados") or []
     for i, a0 in enumerate(br):
         if i >= len(ar) or not isinstance(a0, dict):
             continue
         a1 = ar[i]
-        if a0.get("nombre") != a1.get("nombre") or a0.get("puesto") != a1.get("puesto"):
+        if a0.get("correo") != a1.get("correo") or a0.get("puesto") != a1.get("puesto"):
             c += 1
     return c
 

@@ -16,7 +16,7 @@ def _minimal_acta_payload() -> dict:
         "cliente": "Cliente demo",
         "objetivo": "Alinear próximos pasos.",
         "cierre": "Los equipos siguen reuniones próximas con entregables validados.",
-        "asistentes": [{"nombre": "Ana", "puesto": "PM"}],
+        "invitados": [],
         "asuntos_tratados": [
             {"titulo": "1. Estado", "descripcion": "Se revisó el estado del proyecto."}
         ],
@@ -70,7 +70,7 @@ def test_extract_json_from_markdown_fences(monkeypatch: pytest.MonkeyPatch) -> N
     out = structure_meeting("notas mínimas", metadata={}, source_filename=None)
 
     assert out["titulo"] == payload["titulo"]
-    assert out["asistentes"][0]["nombre"] == "Ana"
+    assert out["invitados"] == []
 
 
 def test_extract_json_after_preamble(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -8,6 +8,7 @@ type ProcessPayload = {
   output_base_name: string;
   pdf_base64: string;
   docx_base64: string | null;
+  drive_web_link?: string | null;
 };
 
 type ApiErrorPayload = {
@@ -243,6 +244,16 @@ export function App() {
               Descargar DOCX
             </button>
           )}
+          {payload.drive_web_link ? (
+            <a
+              className="secondary button-link"
+              href={payload.drive_web_link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Abrir en Drive
+            </a>
+          ) : null}
         </div>
       )}
 

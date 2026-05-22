@@ -152,20 +152,20 @@ def fix_document(path):
     # Step 2: fix table structure
     print("\n-- Step 2: Fixing table structure --")
 
-    # Table 1 — asistentes (3 cols → 4)
-    t_asistentes = doc.tables[1]
-    if len(t_asistentes.columns) == 3:
-        add_column(t_asistentes, width=800)
-        print("  asistentes: added column 4")
-    if len(t_asistentes.rows) == 2:
-        row = t_asistentes.rows[1]
-        set_cell_text(row.cells[0], "{%tr for a in asistentes %}")
+    # Table 1 — invitados (3 cols → 4)
+    t_invitados = doc.tables[1]
+    if len(t_invitados.columns) == 3:
+        add_column(t_invitados, width=800)
+        print("  invitados: added column 4")
+    if len(t_invitados.rows) == 2:
+        row = t_invitados.rows[1]
+        set_cell_text(row.cells[0], "{%tr for a in invitados %}")
         set_cell_text(row.cells[1], "{{a.nombre}}")
         set_cell_text(row.cells[2], "{{a.puesto}}")
         set_cell_text(row.cells[3], "{%tr endfor %}")
-        print("  asistentes row 1:", [c.paragraphs[0].text for c in row.cells])
+        print("  invitados row 1:", [c.paragraphs[0].text for c in row.cells])
     else:
-        print("  asistentes: skip row 1 layout (expected 2 rows, have %s)" % len(t_asistentes.rows))
+        print("  invitados: skip row 1 layout (expected 2 rows, have %s)" % len(t_invitados.rows))
 
     # Table 2 — compromisos_gorila (4 cols → 5)
     t_gorila = doc.tables[2]
@@ -201,7 +201,7 @@ def fix_document(path):
 
     print("\n-- Step 2b: Split {%tr for%}/{%tr endfor%} into separate rows (docxtpl) --")
     for label, idx in (
-        ("asistentes", 1),
+        ("invitados", 1),
         ("compromisos_gorila", 2),
         ("compromisos_cliente", 3),
     ):
@@ -219,7 +219,7 @@ def fix_document(path):
             return
         row = tbl.rows[2]
         texts = [c.paragraphs[0].text if c.paragraphs else "" for c in row.cells]
-        if label == "asistentes":
+        if label == "invitados":
             cleaned = []
             for t in texts:
                 s = (t or "").replace("✓", "").strip()
@@ -228,11 +228,11 @@ def fix_document(path):
         body = [t for t in texts if t.strip()]
         for i, c in enumerate(row.cells):
             set_cell_text(c, body[i] if i < len(body) else "")
-        if label == "asistentes" and len(row.cells) > 2:
-            set_cell_text(row.cells[2], "✓")
+        if label == "invitados" and len(row.cells) > 2:
+            set_cell_text(row.cells[2], "Confirmado")
         print(f"  {label}: data row packed ({len(body)} fields)")
 
-    pack_table_data_row(doc.tables[1], "asistentes")
+    pack_table_data_row(doc.tables[1], "invitados")
     pack_table_data_row(doc.tables[2], "compromisos_gorila")
     pack_table_data_row(doc.tables[3], "compromisos_cliente")
 

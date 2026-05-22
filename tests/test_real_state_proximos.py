@@ -57,16 +57,18 @@ def test_build_compromisos_from_proximos_real_state() -> None:
     items = extract_proximos_pasos_items(REAL_STATE_NOTES_SNIPPET)
     teams = ["Marketing Gorila Hosting", "Administración Gorila Hosting"]
     g, c = build_compromisos_from_proximos_pasos(items, teams)
-    assert len(g) == 1
-    assert "Evaluar internamente el alcance" in g[0]["tarea"]
-    assert g[0]["responsable"] == "Marketing & Administración Gorila Hosting"
-    assert len(c) == 2
-    assert all(row["responsable"] == "Marco Gonzalez" for row in c)
-    assert any("Formalizar la estrategia de pauta inicial" in row["tarea"] for row in c)
-    assert any("referencias visuales" in row["tarea"] for row in c)
+    assert "Evaluar internamente el alcance" in g[0]["tarea"] or any(
+        "Evaluar internamente" in r["tarea"] for r in g
+    )
+    marco_rows = [r for r in g if r["responsable"] == "Marco Gonzalez"]
+    assert len(marco_rows) == 1
+    assert "Formalizar la estrategia" in marco_rows[0]["tarea"]
+    assert "referencias" in marco_rows[0]["tarea"].casefold()
+    assert len(c) == 0
+    assert len(g) == 2
 
 
-def test_finalize_overrides_compromisos_and_filters_team_attendees() -> None:
+def test_finalize_overrides_compromisos_and_builds_email_invitados() -> None:
     data = {
         "titulo": "Revisión Pauta",
         "fecha": "15 de mayo de 2026",
@@ -76,26 +78,33 @@ def test_finalize_overrides_compromisos_and_filters_team_attendees() -> None:
         "cliente": "Real State",
         "objetivo": "o",
         "cierre": "",
-        "asistentes": [
-            {"nombre": "Camilo Linares Jiménez", "puesto": "Marketing Gorila Hosting"},
-            {"nombre": "Marco Gonzalez", "puesto": "Administración Gorila Hosting"},
-            {"nombre": "ads.gorilahosting@gmail.com", "puesto": "Social Media Gorila Hosting"},
-        ],
+        "invitados": [],
         "asuntos_tratados": [],
         "compromisos_gorila": [],
         "compromisos_cliente": [],
     }
     items = extract_proximos_pasos_items(REAL_STATE_NOTES_SNIPPET)
-    teams = ["Marketing Gorila Hosting", "Administración Gorila Hosting"]
+    metadata = {
+        "gorila_teams": ["Marketing Gorila Hosting", "Administración Gorila Hosting"],
+        "attendee_emails": [
+            "camilolinaresj@gmail.com",
+            "marco.cliente@empresa.com",
+        ],
+        "gorila_emails": ["camilolinaresj@gmail.com"],
+        "gorila_person_names": ["Camilo Linares Jiménez"],
+    }
     out = finalize_acta_after_llm(
         data,
         REAL_STATE_NOTES_SNIPPET,
         proximos_items=items,
-        gorila_teams=teams,
+        metadata=metadata,
     )
-    assert len(out["asistentes"]) == 2
-    by_n = {a["nombre"]: a["puesto"] for a in out["asistentes"]}
-    assert by_n["Camilo Linares Jiménez"] == "Marketing Gorila Hosting"
-    assert by_n["Marco Gonzalez"] == "Administración Gorila Hosting"
-    assert len(out["compromisos_gorila"]) == 1
-    assert len(out["compromisos_cliente"]) == 2
+    assert len(out["invitados"]) == 3
+    assert out["invitados"][0]["correo"] == "camilolinaresj@gmail.com"
+    assert out["invitados"][0]["nombre"] == "Camilolinaresj"
+    assert out["invitados"][0]["asistencia"] == "Confirmado"
+    assert out["invitados"][1]["correo"] == "marco.cliente@empresa.com"
+    marco_internal = next(i for i in out["invitados"] if i["nombre"] == "Marco Gonzalez")
+    assert marco_internal["puesto"] == "Especialista Paid Media Google Meta Gorila"
+    assert len(out["compromisos_gorila"]) == 2
+    assert len(out["compromisos_cliente"]) == 0

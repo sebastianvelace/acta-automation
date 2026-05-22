@@ -7,20 +7,6 @@
     "cliente": "Portal cliente",
     "objetivo": "Sincronizar portal y material del cliente.",
     "cierre": "Portal queda pendiente QA final según soporte cliente.",
-    "asistentes": [
-        {
-            "nombre": "Eventos y Matrominios Portal",
-            "puesto": "No especificado"
-        },
-        {
-            "nombre": "Eventos & Matrimonios Portal",
-            "puesto": "No especificado"
-        },
-        {
-            "nombre": "Ana Garcia",
-            "puesto": "cliente.com"
-        }
-    ],
     "asuntos_tratados": [
         {
             "titulo": "Portal",
@@ -34,5 +20,6 @@
             "fecha_entrega": "No especificada"
         }
     ],
-    "compromisos_cliente": []
+    "compromisos_cliente": [],
+    "invitados": []
 }

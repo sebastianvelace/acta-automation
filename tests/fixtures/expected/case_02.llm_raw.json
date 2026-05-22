@@ -7,20 +7,6 @@
     "cliente": "Administración - Cierre mensual",
     "objetivo": "Cerrar temas administrativos del mes.",
     "cierre": "Administración revisará próximos cierres con reportes pactados.",
-    "asistentes": [
-        {
-            "nombre": "Administración Gorila Hosting",
-            "puesto": "No especificado"
-        },
-        {
-            "nombre": "Redes Gorila Hosting",
-            "puesto": "No especificado"
-        },
-        {
-            "nombre": "Cliente",
-            "puesto": "empresa.co"
-        }
-    ],
     "asuntos_tratados": [
         {
             "titulo": "Cierre",
@@ -40,5 +26,6 @@
             "responsable": "Cliente",
             "fecha_entrega": "No especificada"
         }
-    ]
+    ],
+    "invitados": []
 }

@@ -7,20 +7,6 @@
     "cliente": "Executive review",
     "objetivo": "Alinear prioridades ejecutivas y soporte.",
     "cierre": "Ejecutivo revisará KPIs antes del próximo encuentro mensual.",
-    "asistentes": [
-        {
-            "nombre": "Executive Gorila Hosting",
-            "puesto": "No especificado"
-        },
-        {
-            "nombre": "Soporte Gorila Hosting",
-            "puesto": "No especificado"
-        },
-        {
-            "nombre": "Ventas Gorila Hosting",
-            "puesto": "No especificado"
-        }
-    ],
     "asuntos_tratados": [
         {
             "titulo": "KPIs",
@@ -34,5 +20,6 @@
             "fecha_entrega": "No especificada"
         }
     ],
-    "compromisos_cliente": []
+    "compromisos_cliente": [],
+    "invitados": []
 }

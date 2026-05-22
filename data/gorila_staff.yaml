@@ -1,0 +1,148 @@
+# Integrantes de Gorila Hosting — fuente de verdad para clasificación de compromisos.
+# Añadir/quitar personas aquí; no hace falta tocar código salvo aliases nuevos.
+#
+# aliases: variantes de nombre; usar primer nombre solo si es único en el roster.
+# No incluir "Karen" a secas (hay dos Karens).
+
+staff:
+  - canonical_name: "Santiago Andrés Alvarino Caipa"
+    emails: ["info@gorila.hosting"]
+    role: "Gerente Comercial"
+    aliases:
+      - "Santiago Alvarino Caipa"
+      - "Santiago Alvarino"
+      - "Santiago Andrés Alvarino"
+
+  - canonical_name: "Angélica Lucia Acendra Velasco"
+    emails:
+      - "angelica.codigoscreativos@gmail.com"
+      - "infocodigoscreativos@gmail.com"
+    role: "Gerente general"
+    aliases:
+      - "Angelica Lucia Acendra Velasco"
+      - "Angélica Acendra"
+      - "Angelica Acendra"
+
+  - canonical_name: "Juan Aldaz"
+    emails: ["j.aldazosorio@gmail.com"]
+    role: "Especialista en Marketing Digital"
+    aliases:
+      - "Juan Aldaz Osorio"
+
+  - canonical_name: "Diego Fernando Burgos Mesa"
+    emails: ["web@gorila.hosting"]
+    role: "Lider equipo Desarrollo Web"
+    aliases:
+      - "Diego Burgos Mesa"
+      - "Diego Burgos"
+      - "Diego Fernando Burgos"
+
+  - canonical_name: "Martina Belén Tonelli"
+    emails:
+      - "soporte.gorilahosting@gmail.com"
+      - "gorilahosting@gmail.com"
+    role: "Diseño y desarrollo web"
+    aliases:
+      - "Martina Tonelli"
+      - "Martina Belen Tonelli"
+      - "Martina"
+
+  - canonical_name: "Marco Gonzalez"
+    emails:
+      - "ads@gorila.hosting"
+      - "ads.gorilahosting@gmail.com"
+    role: "Especialista Paid Media Google Meta"
+    aliases:
+      - "Marco González"
+      - "Marco"
+
+  - canonical_name: "Karen Patricia Carvajal Gómez"
+    emails: ["editorial.gorilahosting@gmail.com"]
+    role: "Copywriter"
+    aliases:
+      - "Karen Patricia Carvajal"
+      - "Karen Carvajal"
+      - "Karen Patricia Carvajal Gomez"
+
+  - canonical_name: "Maria Paula Cely Farasica"
+    emails: ["administracion@gorila.hosting"]
+    role: "Chief Staff Comunicaciones"
+    aliases:
+      - "Maria Paula Cely"
+      - "María Paula Cely Farasica"
+      - "Maria Paula"
+
+  - canonical_name: "Katherin Miluska Laulate"
+    emails: ["executive@gorila.hosting"]
+    role: "Especialista Paid Media Google"
+    aliases:
+      - "Katherin Laulate"
+      - "Katherin Miluska"
+      - "Kat"
+
+  - canonical_name: "Karen Tatiana Gonzalez Silva"
+    emails: ["design2.gorilahosting@gmail.com"]
+    role: "Diseñadora Gráfica"
+    aliases:
+      - "Karen Tatiana Gonzalez"
+      - "Karen Gonzalez Silva"
+      - "Karen Tatiana"
+
+  - canonical_name: "Viviana Blanco"
+    emails: ["marketing@gorila.hosting"]
+    role: "Senior Comunicaciones"
+    aliases:
+      - "Viviana"
+
+  - canonical_name: "Vivian Arevalo"
+    emails: ["socialmedia@gorila.hosting"]
+    role: "Social Media Manager"
+    aliases:
+      - "Vivian Arévalo"
+
+  - canonical_name: "Juana Valentina Avilan"
+    emails: ["socialmedia2@gorila.hosting"]
+    role: "Social Media Manager"
+    aliases:
+      - "Juana Avilan"
+      - "Juana Valentina"
+
+  - canonical_name: "Anny Valoyes"
+    emails: ["socialmedia3@gorila.hosting"]
+    role: "Social Media Manager Universal"
+    aliases:
+      - "Anny"
+
+  - canonical_name: "Natalia Fernandez"
+    emails: ["info@xenttia.com"]
+    role: "Account Manager Xenttia"
+    aliases:
+      - "Natalia Fernández"
+      - "Natalia"
+
+  - canonical_name: "Monica Lopez"
+    emails: ["accountmanager@gorila.hosting"]
+    role: "Account Manager Agost"
+    aliases:
+      - "Mónica Lopez"
+      - "Monica López"
+      - "Monica"
+
+  - canonical_name: "Omar Escobedo"
+    emails: []
+    role: "Analista de Datos"
+    aliases:
+      - "Omar"
+
+  - canonical_name: "David Gutiérrez"
+    emails: ["davidgutierrez@growfik.com"]
+    role: "Pauta, CRM y analítica"
+    aliases:
+      - "David Gutierrez"
+
+  - canonical_name: "Sebastián Díaz"
+    emails: ["sebastian.diaz.mkt@growfik.com"]
+    role: "Marketing"
+    aliases:
+      - "Sebastian Diaz"
+      - "Sebastián Diaz"
