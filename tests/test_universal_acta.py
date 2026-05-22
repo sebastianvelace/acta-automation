@@ -33,7 +33,8 @@ def test_omar_compromisos_route_to_gorila_not_cliente() -> None:
         meeting_date_str="21 de mayo de 2026",
     )
     omar_rows = [r for r in g if r["responsable"] == "Omar Escobedo"]
-    assert len(omar_rows) == 1
+    assert len(omar_rows) == 3
+    assert all("; " not in r["tarea"] for r in g + c)
     assert "Validar metodología" in omar_rows[0]["tarea"] or "Coordinar una reunión" in omar_rows[0]["tarea"]
     assert all(r["responsable"] != "Universal" for r in g)
     assert not any("Omar" in r["responsable"] for r in c)

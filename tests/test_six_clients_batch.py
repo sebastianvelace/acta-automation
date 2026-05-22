@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from scripts.batch_grade import (
@@ -15,13 +17,23 @@ from scripts.batch_grade import (
 @pytest.mark.parametrize("label", list(DOCS))
 def test_batch_doc_compromisos_counts(label: str) -> None:
     path = DOCS[label]
-    try:
-        acta, _ = build_deterministic_acta(path)
-    except FileNotFoundError:
+    if not os.path.isfile(path):
         pytest.skip(f"DOCX no disponible: {label}")
+    acta, _ = build_deterministic_acta(path)
     eg, ec = EXPECTED_COUNTS[label]
     assert len(acta["compromisos_gorila"]) == eg, label
     assert len(acta["compromisos_cliente"]) == ec, label
+
+
+@pytest.mark.parametrize("label", list(DOCS))
+def test_batch_doc_no_merged_compromiso_tasks(label: str) -> None:
+    path = DOCS[label]
+    if not os.path.isfile(path):
+        pytest.skip(f"DOCX no disponible: {label}")
+    acta, _ = build_deterministic_acta(path)
+    for key in ("compromisos_gorila", "compromisos_cliente"):
+        for row in acta.get(key) or []:
+            assert "; " not in row.get("tarea", ""), label
 
 
 @pytest.mark.parametrize("label", list(DOCS))

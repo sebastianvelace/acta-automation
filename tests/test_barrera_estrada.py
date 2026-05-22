@@ -69,8 +69,8 @@ def test_barrera_mariana_compromisos_go_to_cliente_account() -> None:
         cliente_responsable="Barrera Estrada",
         meeting_date_str="21 de mayo de 2026",
     )
-    assert len(g) == 1
-    assert len(c) == 2
+    assert len(g) == 2
+    assert len(c) == 3
     assert all(r["responsable"] == "Barrera Estrada" for r in c)
     parrilla = next(r for r in c if "calendario de contenidos" in r["tarea"])
     assert parrilla["fecha_entrega"] == "22 de mayo de 2026, 5:00 PM"
@@ -121,8 +121,8 @@ def test_barrera_finalize_end_to_end_without_llm() -> None:
         },
     )
     assert out["cliente"] == "Seguimiento Barrera Estrada"
-    assert len(out["compromisos_gorila"]) == 1
-    assert len(out["compromisos_cliente"]) == 2
+    assert len(out["compromisos_gorila"]) == 2
+    assert len(out["compromisos_cliente"]) == 3
     assert out["invitados"][0]["nombre"] == "Enythelvira"
     patched = apply_metadata_times_to_acta(out, {"hora_inicio": "4:01 PM"})
     assert patched["hora_inicio"] == "4:01 PM"

@@ -51,11 +51,11 @@ DOCS: dict[str, str] = {
 
 EXPECTED_COUNTS: dict[str, tuple[int, int]] = {
     "Ana Maria": (1, 4),
-    "Universal Campañas": (4, 0),
+    "Universal Campañas": (8, 0),
     "Marlon": (2, 2),
-    "Sambal": (2, 2),
-    "Universal Dashboard": (3, 0),
-    "Barrera": (1, 2),
+    "Sambal": (3, 2),
+    "Universal Dashboard": (8, 0),
+    "Barrera": (2, 3),
 }
 
 

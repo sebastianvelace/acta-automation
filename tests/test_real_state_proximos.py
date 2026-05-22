@@ -61,11 +61,12 @@ def test_build_compromisos_from_proximos_real_state() -> None:
         "Evaluar internamente" in r["tarea"] for r in g
     )
     marco_rows = [r for r in g if r["responsable"] == "Marco Gonzalez"]
-    assert len(marco_rows) == 1
+    assert len(marco_rows) == 2
     assert "Formalizar la estrategia" in marco_rows[0]["tarea"]
-    assert "referencias" in marco_rows[0]["tarea"].casefold()
+    assert "referencias" in marco_rows[1]["tarea"].casefold()
     assert len(c) == 0
-    assert len(g) == 2
+    assert len(g) == 3
+    assert all("; " not in r["tarea"] for r in g)
 
 
 def test_finalize_overrides_compromisos_and_builds_email_invitados() -> None:
@@ -106,5 +107,5 @@ def test_finalize_overrides_compromisos_and_builds_email_invitados() -> None:
     assert out["invitados"][1]["correo"] == "marco.cliente@empresa.com"
     marco_internal = next(i for i in out["invitados"] if i["nombre"] == "Marco Gonzalez")
     assert marco_internal["puesto"] == "Especialista Paid Media Google Meta Gorila"
-    assert len(out["compromisos_gorila"]) == 2
+    assert len(out["compromisos_gorila"]) == 3
     assert len(out["compromisos_cliente"]) == 0

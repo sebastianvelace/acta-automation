@@ -76,10 +76,10 @@ def test_karen_tatiana_matches() -> None:
 def test_marco_gonzalez_always_gorila_in_proximos() -> None:
     items = extract_proximos_pasos_items(REAL_STATE_NOTES)
     g, c = build_compromisos_from_proximos_pasos(items, ["Marketing Gorila Hosting"])
-    assert len(g) == 2
+    assert len(g) == 3
     assert len(c) == 0
     marco_rows = [r for r in g if "Marco" in r["responsable"]]
-    assert len(marco_rows) == 1
+    assert len(marco_rows) == 2
 
 
 def test_reclassify_moves_roster_member_from_cliente() -> None:

@@ -413,135 +413,6 @@ def _is_client_deliverable_despite_gorila_tag(tag: str, descripcion: str) -> boo
     return bool(_CLIENT_DELIVERY_RE.search(descripcion or ""))
 
 
-def _proximos_desc_index(items: list[dict[str, str]]) -> dict[str, dict[str, str]]:
-    return {((it.get("descripcion") or "").strip().casefold()): it for it in items if it.get("descripcion")}
-
-
-def _merge_compromiso_rows(rows: list[dict[str, str]]) -> dict[str, str]:
-    if not rows:
-        return {"tarea": "", "responsable": "", "fecha_entrega": "No especificada"}
-    if len(rows) == 1:
-        return dict(rows[0])
-    tareas = [r["tarea"] for r in rows if r.get("tarea")]
-    fechas = [r["fecha_entrega"] for r in rows if r.get("fecha_entrega") and r["fecha_entrega"] != "No especificada"]
-    return {
-        "tarea": "; ".join(tareas),
-        "responsable": rows[0]["responsable"],
-        "fecha_entrega": fechas[0] if fechas else rows[0].get("fecha_entrega", "No especificada"),
-    }
-
-
-def _merge_cliente_parrilla_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Une tareas cliente sobre la misma parrilla/seguimiento (p. ej. Barrera)."""
-    if len(rows) < 2:
-        return rows
-    parrilla_keys = ("parrilla", "calendario de contenidos", "material de trabajo", "abogado")
-    parrilla_rows: list[dict[str, str]] = []
-    rest: list[dict[str, str]] = []
-    for row in rows:
-        blob = row["tarea"].casefold()
-        if any(k in blob for k in parrilla_keys):
-            parrilla_rows.append(row)
-        else:
-            rest.append(row)
-    if len(parrilla_rows) >= 2:
-        rest.insert(0, _merge_compromiso_rows(parrilla_rows))
-        return rest
-    return rows
-
-
-def consolidate_compromisos_from_proximos(
-    gorila: list[dict[str, str]],
-    cliente: list[dict[str, str]],
-    proximos_items: list[dict[str, str]] | None,
-    gorila_teams: list[str],
-) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    """
-    Compacta filas duplicadas para alinear densidad con actas manuales:
-    - [El grupo]/[The group] → una fila
-    - 3+ tareas con el mismo tag persona → una fila
-    - 2+ tareas de equipo Gorila cuando también hay 3+ de una persona interna
-    """
-    if not proximos_items:
-        return gorila, _merge_cliente_parrilla_rows(cliente)
-
-    desc_index = _proximos_desc_index(proximos_items)
-    group_rows: list[dict[str, str]] = []
-    other_g: list[dict[str, str]] = []
-    tag_counts: dict[str, int] = {}
-    for it in proximos_items:
-        tag_cf = (it.get("tag") or "").strip().casefold()
-        if tag_cf:
-            tag_counts[tag_cf] = tag_counts.get(tag_cf, 0) + 1
-
-    for row in gorila:
-        prox = desc_index.get(row["tarea"].casefold(), {})
-        tag = (prox.get("tag") or "").strip()
-        if is_gorila_group_commitment_tag(tag):
-            group_rows.append(row)
-        else:
-            other_g.append(row)
-
-    merged_g: list[dict[str, str]] = []
-    if group_rows:
-        merged_g.append(_merge_compromiso_rows(group_rows))
-
-    person_tags_3plus = {
-        t
-        for t, n in tag_counts.items()
-        if n >= 3 and not is_gorila_group_commitment_tag(t) and not is_gorila_responsable(t)
-    }
-    roster_person_tags_2plus = {
-        t
-        for t, n in tag_counts.items()
-        if n >= 2
-        and not is_gorila_group_commitment_tag(t)
-        and not is_gorila_responsable(t)
-        and match_roster_member(t)
-    }
-
-    by_tag: dict[str, list[dict[str, str]]] = {}
-    tag_order: list[str] = []
-    for row in other_g:
-        prox = desc_index.get(row["tarea"].casefold(), {})
-        tag_cf = (prox.get("tag") or "").strip().casefold() or f"__row__:{row['tarea'].casefold()}"
-        if tag_cf not in by_tag:
-            by_tag[tag_cf] = []
-            tag_order.append(tag_cf)
-        by_tag[tag_cf].append(row)
-
-    for tag_cf in tag_order:
-        bucket = by_tag[tag_cf]
-        if (
-            tag_cf in person_tags_3plus
-            or tag_cf in roster_person_tags_2plus
-        ):
-            merged_g.append(_merge_compromiso_rows(bucket))
-        else:
-            merged_g.extend(bucket)
-
-    if len(merged_g) > 4:
-        team_buckets: dict[str, list[dict[str, str]]] = {}
-        team_order: list[str] = []
-        final_g: list[dict[str, str]] = []
-        for row in merged_g:
-            prox = desc_index.get(row["tarea"].casefold(), {})
-            tag = (prox.get("tag") or "").strip()
-            tag_cf = tag.casefold()
-            if is_gorila_responsable(tag) and tag_counts.get(tag_cf, 0) >= 2:
-                if tag_cf not in team_buckets:
-                    team_buckets[tag_cf] = []
-                    team_order.append(tag_cf)
-                team_buckets[tag_cf].append(row)
-            else:
-                final_g.append(row)
-        for tag_cf in team_order:
-            final_g.append(_merge_compromiso_rows(team_buckets[tag_cf]))
-        merged_g = final_g
-
-    return merged_g, _merge_cliente_parrilla_rows(cliente)
-
-
 def build_compromisos_from_proximos_pasos(
     items: list[dict[str, str]],
     gorila_teams: list[str],
@@ -586,7 +457,7 @@ def build_compromisos_from_proximos_pasos(
         else:
             row["responsable"] = client_label
             out_c.append(dict(row))
-    return consolidate_compromisos_from_proximos(out_g, out_c, items, gorila_teams)
+    return out_g, out_c
 
 
 def compose_cliente_heading(titulo: str, cliente: str) -> str:

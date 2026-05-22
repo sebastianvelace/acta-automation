@@ -4,6 +4,7 @@ import pytest
 
 from src.aliases import (
     TEAM_ALIASES,
+    build_compromisos_from_proximos_pasos,
     client_account_responsable,
     compose_cliente_heading,
     is_gorila_responsable,
@@ -12,6 +13,7 @@ from src.aliases import (
     post_process_acta,
     reclassify_compromisos,
 )
+from src.parser import extract_proximos_pasos_items
 
 
 @pytest.mark.parametrize(
@@ -183,3 +185,22 @@ def test_post_process_compromisos_real_state_scenario() -> None:
     eval_row = next(r for r in out["compromisos_gorila"] if r["tarea"] == "Evaluar portales")
     assert eval_row["responsable"] == "Marketing & Administración Gorila Hosting"
     assert len(out["compromisos_cliente"]) == 0
+
+
+REAL_STATE_PROXIMOS = """
+Próximos pasos
+[Marco Gonzalez] Formalizar estrategia: Formalizar la estrategia de pauta inicial en un documento.
+[Marco Gonzalez] Enviar referencias: Enviar al equipo de trabajo las referencias visuales.
+[El grupo] Evaluar portales: Evaluar internamente el alcance de pautar en portales especializados.
+"""
+
+
+def test_each_proximo_paso_is_one_table_row() -> None:
+    items = extract_proximos_pasos_items(REAL_STATE_PROXIMOS)
+    g, c = build_compromisos_from_proximos_pasos(
+        items,
+        ["Marketing Gorila Hosting", "Administración Gorila Hosting"],
+    )
+    assert len(g) + len(c) == len(items)
+    for row in g + c:
+        assert "; " not in row["tarea"]

@@ -24,11 +24,11 @@
     "scores": {
       "encabezado": 10.0,
       "invitados": 10.0,
-      "compromisos": 10.0,
-      "overall": 10.0
+      "compromisos": 0.0,
+      "overall": 6.67
     },
     "compromisos": {
-      "got_gorila": 4,
+      "got_gorila": 8,
       "got_cliente": 0,
       "exp_gorila": 4,
       "exp_cliente": 0
@@ -62,11 +62,11 @@
     "scores": {
       "encabezado": 10.0,
       "invitados": 10.0,
-      "compromisos": 10.0,
-      "overall": 10.0
+      "compromisos": 7.5,
+      "overall": 9.17
     },
     "compromisos": {
-      "got_gorila": 2,
+      "got_gorila": 3,
       "got_cliente": 2,
       "exp_gorila": 2,
       "exp_cliente": 2
@@ -77,22 +77,8 @@
   },
   {
     "label": "Universal Dashboard",
-    "skipped": false,
-    "scores": {
-      "encabezado": 10.0,
-      "invitados": 10.0,
-      "compromisos": 10.0,
-      "overall": 10.0
-    },
-    "compromisos": {
-      "got_gorila": 3,
-      "got_cliente": 0,
-      "exp_gorila": 3,
-      "exp_cliente": 0
-    },
-    "cliente": "Actualización Dashboard - Universal",
-    "lugar": "No especificada",
-    "invitados_n": 6
+    "skipped": true,
+    "reason": "docx not found"
   },
   {
     "label": "Barrera",
@@ -100,12 +86,12 @@
     "scores": {
       "encabezado": 10.0,
       "invitados": 10.0,
-      "compromisos": 10.0,
-      "overall": 10.0
+      "compromisos": 5.0,
+      "overall": 8.33
     },
     "compromisos": {
-      "got_gorila": 1,
-      "got_cliente": 2,
+      "got_gorila": 2,
+      "got_cliente": 3,
       "exp_gorila": 1,
       "exp_cliente": 2
     },
