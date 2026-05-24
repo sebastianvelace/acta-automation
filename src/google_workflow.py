@@ -9,7 +9,7 @@ import base64
 import logging
 import os
 import re
-from datetime import date, datetime
+from src.dates import add_hours_to_ampm_time, format_meeting_date_prose
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -193,6 +193,10 @@ def apply_metadata_times_to_acta(
     d = meta.get("date")
     if force and d and str(d).strip():
         out["fecha"] = str(d).strip()
+    else:
+        raw_fecha = str(out.get("fecha") or d or "").strip()
+        if raw_fecha:
+            out["fecha"] = format_meeting_date_prose(raw_fecha) or raw_fecha
 
     for k in ("hora_inicio", "hora_fin"):
         v = meta.get(k)
@@ -201,6 +205,13 @@ def apply_metadata_times_to_acta(
         meta_v = str(v).strip()
         if force or _is_time_placeholder(out.get(k)):
             out[k] = meta_v
+
+    if _is_time_placeholder(out.get("hora_fin")):
+        hi = str(out.get("hora_inicio") or meta.get("hora_inicio") or "").strip()
+        if hi and not _is_time_placeholder(hi):
+            inferred = add_hours_to_ampm_time(hi, 1)
+            if inferred:
+                out["hora_fin"] = inferred
 
     if meta.get("is_virtual") and _is_time_placeholder(out.get("lugar")):
         out["lugar"] = "Google Meet"

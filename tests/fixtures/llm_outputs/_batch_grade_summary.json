@@ -16,7 +16,7 @@
     },
     "cliente": "Seguimiento - Ana Maria Psicología",
     "lugar": "Google Meet",
-    "invitados_n": 1
+    "invitados_n": 4
   },
   {
     "label": "Universal Campañas",
@@ -24,18 +24,18 @@
     "scores": {
       "encabezado": 10.0,
       "invitados": 10.0,
-      "compromisos": 0.0,
-      "overall": 6.67
+      "compromisos": 10.0,
+      "overall": 10.0
     },
     "compromisos": {
       "got_gorila": 8,
       "got_cliente": 0,
-      "exp_gorila": 4,
+      "exp_gorila": 8,
       "exp_cliente": 0
     },
     "cliente": "Revisión Campañas - Universal Academia de Idiomas",
     "lugar": "No especificada",
-    "invitados_n": 5
+    "invitados_n": 8
   },
   {
     "label": "Marlon",
@@ -54,7 +54,7 @@
     },
     "cliente": "Seguimiento Marlon Becerra a.",
     "lugar": "Google Meet",
-    "invitados_n": 5
+    "invitados_n": 8
   },
   {
     "label": "Sambal",
@@ -62,18 +62,18 @@
     "scores": {
       "encabezado": 10.0,
       "invitados": 10.0,
-      "compromisos": 7.5,
-      "overall": 9.17
+      "compromisos": 10.0,
+      "overall": 10.0
     },
     "compromisos": {
       "got_gorila": 3,
       "got_cliente": 2,
-      "exp_gorila": 2,
+      "exp_gorila": 3,
       "exp_cliente": 2
     },
     "cliente": "Revisión Pauta - Sambal",
     "lugar": "No especificada",
-    "invitados_n": 4
+    "invitados_n": 7
   },
   {
     "label": "Universal Dashboard",
@@ -86,17 +86,36 @@
     "scores": {
       "encabezado": 10.0,
       "invitados": 10.0,
-      "compromisos": 5.0,
-      "overall": 8.33
+      "compromisos": 10.0,
+      "overall": 10.0
     },
     "compromisos": {
       "got_gorila": 2,
       "got_cliente": 3,
-      "exp_gorila": 1,
-      "exp_cliente": 2
+      "exp_gorila": 2,
+      "exp_cliente": 3
     },
     "cliente": "Seguimiento Barrera Estrada",
     "lugar": "Google Meet",
-    "invitados_n": 6
+    "invitados_n": 10
+  },
+  {
+    "label": "Real State Seguimiento",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 2,
+      "got_cliente": 5,
+      "exp_gorila": 2,
+      "exp_cliente": 5
+    },
+    "cliente": "Seguimiento - Real State",
+    "lugar": "No especificada",
+    "invitados_n": 4
   }
 ]

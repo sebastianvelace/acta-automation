@@ -91,7 +91,7 @@ def test_metadata_times_override_llm_placeholder() -> None:
         {"hora_inicio": "4:01 PM", "hora_fin": ""},
     )
     assert out["hora_inicio"] == "4:01 PM"
-    assert out["hora_fin"] == "No especificada"
+    assert out["hora_fin"] == "5:01 PM"
 
 
 def test_barrera_finalize_end_to_end_without_llm() -> None:
@@ -123,6 +123,8 @@ def test_barrera_finalize_end_to_end_without_llm() -> None:
     assert out["cliente"] == "Seguimiento Barrera Estrada"
     assert len(out["compromisos_gorila"]) == 2
     assert len(out["compromisos_cliente"]) == 3
-    assert out["invitados"][0]["nombre"] == "Enythelvira"
+    by_nombre = {i["nombre"]: i for i in out["invitados"]}
+    assert "Marketing" in by_nombre
+    assert by_nombre["Enythelvira"]["correo"] == "enythelvira@gmail.com"
     patched = apply_metadata_times_to_acta(out, {"hora_inicio": "4:01 PM"})
     assert patched["hora_inicio"] == "4:01 PM"

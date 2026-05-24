@@ -100,11 +100,15 @@ def test_finalize_overrides_compromisos_and_builds_email_invitados() -> None:
         proximos_items=items,
         metadata=metadata,
     )
-    assert len(out["invitados"]) == 3
-    assert out["invitados"][0]["correo"] == "camilolinaresj@gmail.com"
-    assert out["invitados"][0]["nombre"] == "Camilolinaresj"
-    assert out["invitados"][0]["asistencia"] == "Confirmado"
-    assert out["invitados"][1]["correo"] == "marco.cliente@empresa.com"
+    assert len(out["invitados"]) == 5
+    by_nombre = {i["nombre"]: i for i in out["invitados"]}
+    assert by_nombre["Administración"]["puesto"] == "Organizador"
+    assert by_nombre["Marketing"]["puesto"] == "Gorila Hosting"
+    camilo = next(i for i in out["invitados"] if i["correo"] == "camilolinaresj@gmail.com")
+    assert camilo["nombre"] == "Camilo Linares Jiménez"
+    assert camilo["puesto"] == "Real State"
+    assert camilo["asistencia"] == "Confirmado"
+    assert any(i["correo"] == "marco.cliente@empresa.com" for i in out["invitados"])
     marco_internal = next(i for i in out["invitados"] if i["nombre"] == "Marco Gonzalez")
     assert marco_internal["puesto"] == "Especialista Paid Media Google Meta Gorila"
     assert len(out["compromisos_gorila"]) == 3

@@ -9,19 +9,18 @@ Los datos provienen del JSON del acta (mismos nombres de clave). Aplica los camb
 | `{{ titulo }}` | Título descriptivo del acta |
 | `{{ fecha }}` | Fecha en prosa |
 | `{{ hora_inicio }}` | Hora inicio |
-| `{{ hora_fin }}` | Hora fin (puede ser `No especificada`) |
+| `{{ hora_fin }}` | Hora fin; si falta en notas, el pipeline infiere **hora_inicio + 1 h** |
 | `{{ hora_final }}` | Duplicado de `hora_fin` si la plantilla lo usa (el generador lo rellena) |
-| `{{ lugar }}` | Lugar (suele ser vacío o `No especificada` en notas Gemini) |
+| `{{ lugar }}` | Lugar; `Google Meet` si reunión virtual detectada; si no, `No especificada` |
 | `{{ cliente }}` | Nombre completo de la reunión / cliente |
 | `{{ objetivo }}` | Objetivo (uno o más enunciados) |
 | `{{ cierre }}` | Resumen de cierre: acuerdos y conclusiones finales |
 
 ## Listas (bucles típicos)
 
-- **`invitados`**: cada item `correo` (email del .docx), `nombre` (roster Gorila, contacto cliente en `data/client_contacts.yaml`, o el correo si no hay match), `puesto` (cargo + «Gorila» para internos), `asistencia` (`Confirmado`). Lookup sin LLM. Personas internas en tags de Próximos pasos se añaden aunque no estén en Invitado.
-- **`asuntos_tratados`**: `titulo`, `descripcion`.
-- **`compromisos_gorila`**: `tarea`, `responsable`, `fecha_entrega`.
-- **`compromisos_cliente`**: `tarea`, `responsable`, `fecha_entrega`.
+- **`invitados`**: equipos Gorila del bloque Invitado (Administración → puesto «Organizador»; demás → «Gorila Hosting») más correos enriquecidos. Campos: `correo`, `nombre`, `puesto`, `asistencia` (`Confirmado`). Fuentes: alias de equipos, [`data/gorila_staff.yaml`](../data/gorila_staff.yaml), [`data/client_contacts.yaml`](../data/client_contacts.yaml), tags de Próximos pasos. Sin LLM.
+- **`asuntos_tratados`**: `titulo`, `descripcion` (solo vía Groq; deben salir de **Detalles**, no del Resumen).
+- **`compromisos_gorila`** / **`compromisos_cliente`**: `tarea`, `responsable`, `fecha_entrega`. **Una fila por ítem de Próximos pasos** (post-proceso determinístico; prioridad sobre JSON del LLM).
 
 ## Condicionales recomendados (editar en la .docx)
 

@@ -5,7 +5,7 @@
     "dev:api": "./.venv/bin/python -m uvicorn api.app:app --host 127.0.0.1 --port 8000",
     "dev:api:watch": "./.venv/bin/python -m uvicorn api.app:app --reload --reload-dir api --reload-dir src --host 127.0.0.1 --port 8000",
     "dev:web": "npm run dev --prefix web",
-    "dev": "concurrently -k \"npm run dev:api\" \"npm run dev:web\"",
+    "dev": "concurrently -k \"npm run dev:api:watch\" \"npm run dev:web\"",
     "dev:watch": "concurrently -k \"npm run dev:api:watch\" \"npm run dev:web\""
   },
   "devDependencies": {

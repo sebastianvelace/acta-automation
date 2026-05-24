@@ -272,6 +272,70 @@ def build_invitados_from_attendee_emails(
     return rows
 
 
+def _gorila_team_sort_key(team_label: str) -> tuple[int, str]:
+    label_cf = team_label.casefold()
+    if "administraci" in label_cf:
+        return (-1, label_cf)
+    alias = lookup_team_alias(team_label)
+    role = (alias or {}).get("nombre") or team_label
+    role_cf = role.casefold()
+    for idx, r in enumerate(_ROLE_ORDER):
+        if r.casefold() == role_cf:
+            return (idx, label_cf)
+    return (len(_ROLE_ORDER), label_cf)
+
+
+def _invitado_row_from_gorila_team(team_label: str) -> dict[str, str] | None:
+    label = (team_label or "").strip()
+    if not label:
+        return None
+    alias = lookup_team_alias(label)
+    if not alias:
+        return None
+    nombre = alias["nombre"]
+    if "administraci" in label.casefold():
+        puesto = "Organizador"
+    else:
+        puesto = alias.get("puesto") or "Gorila Hosting"
+    return {
+        "correo": "",
+        "nombre": nombre,
+        "puesto": puesto,
+        "asistencia": "Confirmado",
+    }
+
+
+def merge_invitados_from_gorila_teams(
+    invitados: list[dict[str, str]],
+    gorila_teams: list[str],
+) -> list[dict[str, str]]:
+    """Añade filas de equipos Gorila del bloque Invitado (antes de invitados por correo)."""
+    teams = sorted({t.strip() for t in (gorila_teams or []) if t and t.strip()}, key=_gorila_team_sort_key)
+    if not teams:
+        return invitados
+    team_rows: list[dict[str, str]] = []
+    seen_names: set[str] = set()
+    for team in teams:
+        row = _invitado_row_from_gorila_team(team)
+        if not row:
+            continue
+        key = row["nombre"].casefold()
+        if key in seen_names:
+            continue
+        seen_names.add(key)
+        team_rows.append(row)
+    if not team_rows:
+        return invitados
+    email_rows = list(invitados)
+    filtered_email_rows: list[dict[str, str]] = []
+    for row in email_rows:
+        nombre_cf = (row.get("nombre") or "").strip().casefold()
+        if nombre_cf in seen_names:
+            continue
+        filtered_email_rows.append(row)
+    return team_rows + filtered_email_rows
+
+
 def _invitado_dedupe_key(row: dict[str, str]) -> str:
     correo = (row.get("correo") or "").strip().casefold()
     if correo:
@@ -653,6 +717,7 @@ def finalize_acta_after_llm(
         out["compromisos_cliente"] = c
 
     invitados = build_invitados_from_attendee_emails(attendee_emails, cliente_account=cliente_label)
+    invitados = merge_invitados_from_gorila_teams(invitados, teams)
     invitados = merge_invitados_from_proximos_tags(
         invitados,
         proximos_items,

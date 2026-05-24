@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.aliases import finalize_acta_after_llm, post_process_acta
+from src.aliases import finalize_acta_after_llm, lookup_team_alias, post_process_acta
 from src.google_workflow import apply_metadata_times_to_acta
 from src.parser import extract_proximos_pasos_items, extract_text, is_gorila_email
 
@@ -47,6 +47,10 @@ DOCS: dict[str, str] = {
         "/home/sebasvelace/Downloads/Seguimiento Barrera Estrada_ "
         "2026_05_21 16_01 GMT-05_00 - Notas de Gemini.docx"
     ),
+    "Real State Seguimiento": (
+        "/home/sebasvelace/Downloads/Seguimiento - Real State _ "
+        "2026_05_22 09_00 GMT-05_00 - Notas de Gemini.docx"
+    ),
 }
 
 EXPECTED_COUNTS: dict[str, tuple[int, int]] = {
@@ -56,6 +60,7 @@ EXPECTED_COUNTS: dict[str, tuple[int, int]] = {
     "Sambal": (3, 2),
     "Universal Dashboard": (8, 0),
     "Barrera": (2, 3),
+    "Real State Seguimiento": (2, 5),
 }
 
 
@@ -129,10 +134,12 @@ def score_encabezado(acta: dict[str, Any], meta: dict[str, Any], titulo: str) ->
 def score_invitados(acta: dict[str, Any], meta: dict[str, Any]) -> float:
     rows = acta.get("invitados") or []
     emails = meta.get("attendee_emails") or []
-    if not emails:
+    teams = meta.get("gorila_teams") or []
+    if not emails and not teams:
         return 10.0 if not rows else 7.0
     pts = 10.0
     by_email = {str(r.get("correo") or "").casefold(): r for r in rows if isinstance(r, dict)}
+    by_nombre = {str(r.get("nombre") or "").casefold(): r for r in rows if isinstance(r, dict)}
     for email in emails:
         if email.casefold() not in by_email:
             pts -= 2.0
@@ -144,6 +151,13 @@ def score_invitados(acta: dict[str, Any], meta: dict[str, Any]) -> float:
                 pts -= 1.5
             if nombre.lower() in ("el grupo", "the group"):
                 pts -= 2.0
+    for team in teams:
+        alias = lookup_team_alias(team)
+        if not alias:
+            continue
+        team_nombre = str(alias.get("nombre") or "").casefold()
+        if team_nombre and team_nombre not in by_nombre:
+            pts -= 2.0
     return max(0.0, min(10.0, pts))
 
 

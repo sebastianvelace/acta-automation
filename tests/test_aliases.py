@@ -9,6 +9,7 @@ from src.aliases import (
     compose_cliente_heading,
     is_gorila_responsable,
     lookup_team_alias,
+    merge_invitados_from_gorila_teams,
     normalize_attendee,
     post_process_acta,
     reclassify_compromisos,
@@ -204,3 +205,26 @@ def test_each_proximo_paso_is_one_table_row() -> None:
     assert len(g) + len(c) == len(items)
     for row in g + c:
         assert "; " not in row["tarea"]
+
+
+def test_merge_invitados_from_gorila_teams() -> None:
+    teams = [
+        "Social Media Gorila Hosting",
+        "Administración Gorila Hosting",
+        "Marketing Gorila Hosting",
+    ]
+    email_rows = [
+        {
+            "correo": "camilolinaresj@gmail.com",
+            "nombre": "Camilo Linares Jiménez",
+            "puesto": "Real State",
+            "asistencia": "Confirmado",
+        }
+    ]
+    merged = merge_invitados_from_gorila_teams(email_rows, teams)
+    assert len(merged) == 4
+    assert merged[0]["nombre"] == "Administración"
+    assert merged[0]["puesto"] == "Organizador"
+    assert merged[1]["nombre"] == "Marketing"
+    assert merged[2]["nombre"] == "Social Media"
+    assert merged[3]["nombre"] == "Camilo Linares Jiménez"

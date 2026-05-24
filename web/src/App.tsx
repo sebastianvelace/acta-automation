@@ -38,7 +38,7 @@ function downloadBase64(b64: string, filename: string, mime: string) {
 export function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const lastFileRef = useRef<File | null>(null);
-  const [dragFocus, setDragFocus] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [phase, setPhase] = useState<UiPhase>("idle");
   const [serverError, setServerError] = useState<ApiErrorPayload | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -57,30 +57,17 @@ export function App() {
       const fd = new FormData();
       fd.append("file", file);
       setPhase("processing");
-      const res = await fetch(`${apiBase}/api/process`, {
-        method: "POST",
-        body: fd,
-      });
+      const res = await fetch(`${apiBase}/api/process`, { method: "POST", body: fd });
       let body: Record<string, unknown> = {};
-      try {
-        body = (await res.json()) as Record<string, unknown>;
-      } catch {
-        /* ignore */
-      }
+      try { body = (await res.json()) as Record<string, unknown>; } catch { /**/ }
       if (!res.ok) {
-        const userMessage =
-          typeof body.user_message === "string"
-            ? body.user_message
-            : `Error ${res.status}`;
-        const requestId = typeof body.request_id === "string" ? body.request_id : "";
         const err: ApiErrorPayload = {
           error_code: typeof body.error_code === "string" ? body.error_code : "UNKNOWN",
-          user_message: userMessage,
-          request_id: requestId,
+          user_message: typeof body.user_message === "string" ? body.user_message : `Error ${res.status}`,
+          request_id: typeof body.request_id === "string" ? body.request_id : "",
         };
-        if (import.meta.env.DEV && typeof body.technical_details === "string") {
+        if (import.meta.env.DEV && typeof body.technical_details === "string")
           err.technical_details = body.technical_details;
-        }
         setServerError(err);
         setPhase("error");
         return;
@@ -88,80 +75,57 @@ export function App() {
       setPayload(body as unknown as ProcessPayload);
       setPhase("success");
     } catch {
-      setServerError({
-        error_code: "NETWORK",
-        user_message: "Fallo de red. Comprueba tu conexión.",
-        request_id: "",
-      });
+      setServerError({ error_code: "NETWORK", user_message: "Fallo de red. Comprueba tu conexión.", request_id: "" });
       setPhase("error");
     }
   }, []);
 
-  const pick = () => inputRef.current?.click();
+  const onInputChange = useCallback(async (ev: React.ChangeEvent<HTMLInputElement>) => {
+    const file = ev.target.files?.[0];
+    ev.target.value = "";
+    if (file) { setFileLabel(file.name); await upload(file); }
+  }, [upload]);
 
-  const onInputChange = useCallback(
-    async (ev: React.ChangeEvent<HTMLInputElement>) => {
-      const file = ev.target.files?.[0];
-      ev.target.value = "";
-      if (file) {
-        setFileLabel(file.name);
-        setLocalError(null);
-        await upload(file);
-      }
-    },
-    [upload],
-  );
-
-  const onDrop = useCallback(
-    async (ev: React.DragEvent) => {
-      ev.preventDefault();
-      setDragFocus(false);
-      const file = ev.dataTransfer.files?.[0];
-      if (!file?.name.endsWith(".docx")) {
-        setLocalError("Solo archivos .docx");
-        setPhase("error");
-        return;
-      }
-      setFileLabel(file.name);
-      setLocalError(null);
-      await upload(file);
-    },
-    [upload],
-  );
+  const onDrop = useCallback(async (ev: React.DragEvent) => {
+    ev.preventDefault();
+    setDragOver(false);
+    const file = ev.dataTransfer.files?.[0];
+    if (!file?.name.endsWith(".docx")) {
+      setLocalError("Solo se aceptan archivos .docx");
+      setPhase("error");
+      return;
+    }
+    setFileLabel(file.name);
+    setLocalError(null);
+    await upload(file);
+  }, [upload]);
 
   const retryLast = useCallback(async () => {
-    const f = lastFileRef.current;
-    if (!f) return;
-    await upload(f);
+    if (lastFileRef.current) await upload(lastFileRef.current);
   }, [upload]);
 
   const copyRequestId = useCallback(async (rid: string) => {
     if (!rid) return;
-    try {
-      await navigator.clipboard.writeText(rid);
-    } catch {
-      /* ignore */
-    }
+    try { await navigator.clipboard.writeText(rid); } catch { /**/ }
   }, []);
 
-  const baseForDownloads = payload?.output_base_name ?? "acta";
-  const showErrorCard = (serverError && phase === "error") || (localError && phase === "error");
+  const base = payload?.output_base_name ?? "acta";
+  const showError = phase === "error";
 
   return (
-    <div className="app">
-      <h1>Generar acta</h1>
-      <p className="sub">Sube el .docx de Gemini. Se generan PDF y Word en tu navegador.</p>
+    <div className="page">
+      <header className="header">
+        <img src="/gorila-logo.png" alt="" className="logo" />
+        <div>
+          <div className="brand">Gorila Hosting</div>
+          <div className="brand-sub">Generador de Actas</div>
+        </div>
+      </header>
 
-      <div
-        className={`drop ${dragFocus ? "focus" : ""}`}
-        onDragEnter={() => setDragFocus(true)}
-        onDragLeave={() => setDragFocus(false)}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragFocus(true);
-        }}
-        onDrop={onDrop}
-      >
+      <main className="main">
+        <h1 className="title">Genera tu <em>acta</em></h1>
+        <p className="desc">Sube el .docx de Gemini y el sistema genera el PDF y Word automáticamente.</p>
+
         <input
           ref={inputRef}
           type="file"
@@ -169,102 +133,95 @@ export function App() {
           className="file-input"
           onChange={onInputChange}
         />
-        <p>
-          <strong>Suelta el archivo aquí</strong> o elige desde tu equipo.
-        </p>
-        <div className="actions row">
-          <button type="button" onClick={pick} disabled={busy}>
-            Elegir .docx
-          </button>
-        </div>
-      </div>
 
-      {phase === "uploading" && (
-        <p className="status working">Subiendo archivo…</p>
-      )}
-      {phase === "processing" && (
-        <p className="status working">Estructurando con IA, ~10–20s</p>
-      )}
-
-      {phase === "success" && fileLabel && (
-        <p className="status">
-          Listo — <strong>{fileLabel}</strong>
-        </p>
-      )}
-
-      {showErrorCard && (
-        <div className="warn-banner" role="alert">
-          <p className="warn-banner-text">{serverError?.user_message ?? localError}</p>
-          {serverError?.request_id ? (
-            <div className="warn-banner-row">
-              <span className="warn-meta">ID: {serverError.request_id}</span>
-              <button
-                type="button"
-                className="secondary small"
-                onClick={() => copyRequestId(serverError.request_id)}
-              >
-                Copiar request_id
-              </button>
-              <button type="button" className="secondary small" onClick={retryLast}>
-                Reintentar
-              </button>
-            </div>
-          ) : null}
-          {import.meta.env.DEV && serverError?.technical_details ? (
-            <details className="dev-technical">
-              <summary>technical_details (solo desarrollo)</summary>
-              <pre>{serverError.technical_details}</pre>
-            </details>
-          ) : null}
-        </div>
-      )}
-
-      {payload && phase === "success" && (
-        <div className="row actions" style={{ marginTop: "1.25rem" }}>
-          <button
-            type="button"
-            onClick={() =>
-              downloadBase64(payload.pdf_base64, `${baseForDownloads}.pdf`, "application/pdf")
-            }
-          >
-            Descargar PDF
-          </button>
-          {payload.docx_base64 && (
-            <button
-              type="button"
-              className="secondary"
-              onClick={() =>
-                downloadBase64(
-                  payload.docx_base64!,
-                  `${baseForDownloads}.docx`,
-                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                )
-              }
-            >
-              Descargar DOCX
-            </button>
+        <div
+          className={`drop ${dragOver ? "drag-over" : ""} ${busy ? "busy" : ""}`}
+          onDragEnter={() => setDragOver(true)}
+          onDragLeave={() => setDragOver(false)}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDrop={onDrop}
+          onClick={busy ? undefined : () => inputRef.current?.click()}
+        >
+          {busy ? (
+            <span className="spinner" />
+          ) : phase === "success" ? (
+            <svg className="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg className="icon-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
           )}
-          {payload.drive_web_link ? (
-            <a
-              className="secondary button-link"
-              href={payload.drive_web_link}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Abrir en Drive
-            </a>
-          ) : null}
-        </div>
-      )}
 
-      {payload && phase === "success" && (
-        <section className="meta">
-          <details>
+          <span className="drop-label">
+            {busy
+              ? "Procesando con IA…"
+              : phase === "success"
+              ? fileLabel ?? "Listo"
+              : "Arrastra o haz clic para subir el .docx"}
+          </span>
+
+          {busy && <span className="drop-hint">~10–20 segundos</span>}
+          {!busy && phase !== "success" && <span className="drop-hint">.docx exportado de Gemini</span>}
+        </div>
+
+        {showError && (
+          <p className="error-line">
+            {serverError?.user_message ?? localError}
+            {lastFileRef.current && (
+              <> — <button className="inline-btn" onClick={retryLast}>reintentar</button></>
+            )}
+            {serverError?.request_id && (
+              <> · <button className="inline-btn" onClick={() => copyRequestId(serverError.request_id)}>copiar ID</button></>
+            )}
+          </p>
+        )}
+
+        {import.meta.env.DEV && serverError?.technical_details && (
+          <details className="dev-details">
+            <summary>Detalles técnicos</summary>
+            <pre>{serverError.technical_details}</pre>
+          </details>
+        )}
+
+        {payload && phase === "success" && (
+          <div className="actions">
+            <button
+              className="btn-primary"
+              onClick={() => downloadBase64(payload.pdf_base64, `${base}.pdf`, "application/pdf")}
+            >
+              Descargar PDF
+            </button>
+            {payload.docx_base64 && (
+              <button
+                className="btn-ghost"
+                onClick={() => downloadBase64(
+                  payload.docx_base64!,
+                  `${base}.docx`,
+                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )}
+              >
+                Descargar DOCX
+              </button>
+            )}
+            {payload.drive_web_link && (
+              <a className="btn-ghost" href={payload.drive_web_link} target="_blank" rel="noopener noreferrer">
+                Abrir en Drive
+              </a>
+            )}
+          </div>
+        )}
+
+        {payload && phase === "success" && (
+          <details className="meta">
             <summary>Metadatos extraídos</summary>
             <pre>{JSON.stringify(payload.metadata, null, 2)}</pre>
           </details>
-        </section>
-      )}
+        )}
+      </main>
     </div>
   );
 }

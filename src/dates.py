@@ -106,6 +106,44 @@ def parse_meeting_date(date_str: str) -> date | None:
     return None
 
 
+def format_meeting_date_prose(date_str: str) -> str:
+    """Normaliza fecha de metadata Gemini a prosa española (ej. may 22, 2026 → 22 de mayo de 2026)."""
+    s = (date_str or "").strip()
+    if not s:
+        return s
+    if _ES_PROSE_DATE.search(s):
+        return s
+    parsed = parse_meeting_date(s)
+    if parsed is None:
+        return s
+    return f"{parsed.day} de {_ES_MONTH_NAMES[parsed.month - 1]} de {parsed.year}"
+
+
+_AMPM_TIME = re.compile(
+    r"^\s*(\d{1,2}):(\d{2})\s*(AM|PM|A\.?\s*M\.?|P\.?\s*M\.?)\s*$",
+    re.I,
+)
+
+
+def add_hours_to_ampm_time(time_str: str, hours: int = 1) -> str:
+    """Parsea '9:00 AM' / '4:01 PM' y suma horas; devuelve '' si no parsea."""
+    s = (time_str or "").strip()
+    if not s:
+        return ""
+    m = _AMPM_TIME.match(s)
+    if not m:
+        return ""
+    hour = int(m.group(1))
+    minute = int(m.group(2))
+    ampm = m.group(3)
+    hour24 = _parse_ampm_hour(hour, ampm)
+    total_minutes = hour24 * 60 + minute + hours * 60
+    total_minutes %= 24 * 60
+    new_hour = total_minutes // 60
+    new_minute = total_minutes % 60
+    return _format_time_ampm(new_hour, new_minute)
+
+
 def _format_time_ampm(hour: int, minute: int) -> str:
     suffix = "AM" if hour < 12 else "PM"
     h12 = hour % 12 or 12
