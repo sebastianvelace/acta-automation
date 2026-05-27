@@ -71,7 +71,8 @@ def test_barrera_mariana_compromisos_go_to_cliente_account() -> None:
     )
     assert len(g) == 2
     assert len(c) == 3
-    assert all(r["responsable"] == "Barrera Estrada" for r in c)
+    mariana_rows = [r for r in c if r["responsable"] == "Mariana"]
+    assert len(mariana_rows) == 3
     parrilla = next(r for r in c if "calendario de contenidos" in r["tarea"])
     assert parrilla["fecha_entrega"] == "22 de mayo de 2026, 5:00 PM"
 

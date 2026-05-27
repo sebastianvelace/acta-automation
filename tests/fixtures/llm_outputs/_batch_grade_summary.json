@@ -34,7 +34,7 @@
       "exp_cliente": 0
     },
     "cliente": "Revisión Campañas - Universal Academia de Idiomas",
-    "lugar": "No especificada",
+    "lugar": "Google Meet",
     "invitados_n": 8
   },
   {
@@ -52,7 +52,7 @@
       "exp_gorila": 2,
       "exp_cliente": 2
     },
-    "cliente": "Seguimiento Marlon Becerra a.",
+    "cliente": "Seguimiento Marlon Becerra a",
     "lugar": "Google Meet",
     "invitados_n": 8
   },
@@ -72,7 +72,7 @@
       "exp_cliente": 2
     },
     "cliente": "Revisión Pauta - Sambal",
-    "lugar": "No especificada",
+    "lugar": "Google Meet",
     "invitados_n": 7
   },
   {
@@ -115,7 +115,45 @@
       "exp_cliente": 5
     },
     "cliente": "Seguimiento - Real State",
-    "lugar": "No especificada",
+    "lugar": "Google Meet",
     "invitados_n": 4
+  },
+  {
+    "label": "Universal Reporte Ventas",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 0,
+      "got_cliente": 2,
+      "exp_gorila": 0,
+      "exp_cliente": 2
+    },
+    "cliente": "Reunión Reporte de Ventas - Universal",
+    "lugar": "Google Meet",
+    "invitados_n": 7
+  },
+  {
+    "label": "Universal Redes",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 5,
+      "got_cliente": 1,
+      "exp_gorila": 5,
+      "exp_cliente": 1
+    },
+    "cliente": "Redes - Universal Idiomas",
+    "lugar": "Google Meet",
+    "invitados_n": 8
   }
 ]

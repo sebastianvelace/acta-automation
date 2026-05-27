@@ -108,10 +108,18 @@ staff:
       - "Juana Valentina"
 
   - canonical_name: "Anny Valoyes"
-    emails: ["socialmedia3@gorila.hosting"]
+    emails:
+      - "socialmedia3@gorila.hosting"
+      - "annyriios27@gmail.com"
     role: "Social Media Manager Universal"
     aliases:
       - "Anny"
+
+  - canonical_name: "Gresly"
+    emails: ["community1.growfik@gmail.com"]
+    role: "Community Manager"
+    aliases:
+      - "Gresly Growfik"
 
   - canonical_name: "Natalia Fernandez"
     emails: ["info@xenttia.com"]

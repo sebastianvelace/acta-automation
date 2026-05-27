@@ -18,8 +18,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.aliases import finalize_acta_after_llm, lookup_team_alias, post_process_acta
+from src.aliases import finalize_acta_after_llm, is_universal_acta, lookup_team_alias, post_process_acta
 from src.google_workflow import apply_metadata_times_to_acta
+from src.gorila_roster import _is_growfik_branded_email
 from src.parser import extract_proximos_pasos_items, extract_text, is_gorila_email
 
 DOCS: dict[str, str] = {
@@ -51,6 +52,14 @@ DOCS: dict[str, str] = {
         "/home/sebasvelace/Downloads/Seguimiento - Real State _ "
         "2026_05_22 09_00 GMT-05_00 - Notas de Gemini.docx"
     ),
+    "Universal Reporte Ventas": (
+        "/home/sebasvelace/Downloads/Reunión Reporte de Ventas - Universal _ "
+        "2026_05_25 15_59 GMT-05_00 - Notas de Gemini.docx"
+    ),
+    "Universal Redes": (
+        "/home/sebasvelace/Downloads/Redes - Universal Idiomas._ "
+        "2026_05_26 16_02 GMT-05_00 - Notas de Gemini.docx"
+    ),
 }
 
 EXPECTED_COUNTS: dict[str, tuple[int, int]] = {
@@ -61,6 +70,8 @@ EXPECTED_COUNTS: dict[str, tuple[int, int]] = {
     "Universal Dashboard": (8, 0),
     "Barrera": (2, 3),
     "Real State Seguimiento": (2, 5),
+    "Universal Reporte Ventas": (0, 2),
+    "Universal Redes": (5, 1),
 }
 
 
@@ -72,11 +83,11 @@ def titulo_from_filename(path: str) -> str:
 
 def cliente_from_titulo(titulo: str) -> str:
     if " - " in titulo:
-        return titulo.rsplit(" - ", 1)[-1].strip()
+        return titulo.rsplit(" - ", 1)[-1].strip().rstrip(".,;:")
     parts = titulo.split()
     if len(parts) >= 2 and parts[0] in ("Seguimiento", "Revisión", "Actualización"):
-        return " ".join(parts[1:]).strip(" -")
-    return titulo
+        return " ".join(parts[1:]).strip(" -").rstrip(".,;:")
+    return titulo.rstrip(".,;:")
 
 
 def build_deterministic_acta(path: str) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -103,6 +114,7 @@ def build_deterministic_acta(path: str) -> tuple[dict[str, Any], dict[str, Any]]
         parsed["raw_text"],
         proximos_items=prox or None,
         metadata=meta,
+        source_filename=path,
     )
     out = apply_metadata_times_to_acta(out, meta)
     out = post_process_acta(out, meta)
@@ -116,6 +128,8 @@ def score_encabezado(acta: dict[str, Any], meta: dict[str, Any], titulo: str) ->
     if acta.get("fecha") and acta["fecha"] not in ("No especificada", ""):
         pts += 2.0
     if acta.get("hora_inicio") and acta["hora_inicio"] not in ("No especificada", ""):
+        pts += 2.0
+    elif meta.get("is_virtual") and str(acta.get("lugar") or "").casefold() == "google meet":
         pts += 2.0
     cliente = str(acta.get("cliente") or "")
     if cliente and cliente != "No especificado":
@@ -131,10 +145,19 @@ def score_encabezado(acta: dict[str, Any], meta: dict[str, Any], titulo: str) ->
     return min(10.0, max(0.0, pts))
 
 
+def _needs_growfik_puesto(email: str, *, universal: bool) -> bool:
+    return universal and _is_growfik_branded_email(email)
+
+
 def score_invitados(acta: dict[str, Any], meta: dict[str, Any]) -> float:
     rows = acta.get("invitados") or []
     emails = meta.get("attendee_emails") or []
     teams = meta.get("gorila_teams") or []
+    universal = is_universal_acta(
+        cliente=str(acta.get("cliente") or ""),
+        titulo=str(acta.get("titulo") or ""),
+        attendee_emails=emails,
+    )
     if not emails and not teams:
         return 10.0 if not rows else 7.0
     pts = 10.0
@@ -147,8 +170,12 @@ def score_invitados(acta: dict[str, Any], meta: dict[str, Any]) -> float:
             row = by_email[email.casefold()]
             puesto = str(row.get("puesto") or "")
             nombre = str(row.get("nombre") or "")
-            if is_gorila_email(email) and "gorila" not in puesto.casefold():
-                pts -= 1.5
+            if is_gorila_email(email):
+                if _needs_growfik_puesto(email, universal=universal):
+                    if "growfik" not in puesto.casefold():
+                        pts -= 1.5
+                elif "gorila" not in puesto.casefold():
+                    pts -= 1.5
             if nombre.lower() in ("el grupo", "the group"):
                 pts -= 2.0
     for team in teams:

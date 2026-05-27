@@ -49,3 +49,12 @@ def test_extract_fecha_entrega_manana_tarde_before_manana() -> None:
         meeting,
     )
     assert out == "22 de mayo de 2026, 5:00 PM"
+
+
+def test_una_hora_relative_deadline() -> None:
+    meeting = date(2026, 5, 25)
+    out = extract_fecha_entrega(
+        "El informe se completará en aproximadamente 1 hora con datos actualizados.",
+        meeting,
+    )
+    assert out == "25 de mayo de 2026, 1 hora después de la reunión"

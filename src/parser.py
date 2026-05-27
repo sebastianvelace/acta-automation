@@ -49,13 +49,15 @@ def _empty_metadata() -> dict[str, Any]:
 
 def _detect_virtual_meeting(full_text: str) -> bool:
     """True when the document shows evidence of a virtual meeting (recording, Meet/Zoom link)."""
+    if re.search(r"(?i)meet\.google\.com|zoom\.us/j/", full_text):
+        return True
+    if re.search(r"(?i)registros\s+de\s+la\s+reuni[oó]n|\bgrabaci[oó]n\b", full_text):
+        return True
     m = re.search(
         r"(?is)archivos\s+adjuntos\s*(.{0,800}?)(?=registros\s+de\s+la\s+reuni[oó]n|\Z)",
         full_text,
     )
-    if m and "recording" in m.group(1).casefold():
-        return True
-    if re.search(r"(?i)meet\.google\.com|zoom\.us/j/", full_text):
+    if m and re.search(r"(?i)recording|grabaci[oó]n", m.group(1)):
         return True
     return False
 
@@ -361,6 +363,13 @@ def _extract_times_from_filename(basename: str) -> tuple[str, str]:
     return formatted, ""
 
 
+def _filename_time_likely_gemini_export(basename: str, minute: int) -> bool:
+    """Gemini export filenames often end in ``…_15_59 GMT`` (export stamp), not meeting start."""
+    if not re.search(r"(?i)GMT", basename or ""):
+        return False
+    return minute >= 59
+
+
 def count_detalles_blocks(raw_text: str) -> tuple[int, int]:
     """
     Estima cobertura de asuntos: (caracteres en Detalles, bloques/temas detectados).
@@ -395,7 +404,12 @@ def extract_text(docx_path: str) -> dict[str, Any]:
     meta["is_virtual"] = _detect_virtual_meeting(raw_text)
 
     body_ini, body_fin = _extract_hora_from_body(raw_text)
-    file_ini, _ = _extract_times_from_filename(os.path.basename(docx_path))
+    basename = os.path.basename(docx_path)
+    file_ini, _ = _extract_times_from_filename(basename)
+    if not body_ini and file_ini:
+        fm = FILENAME_DATETIME_RE.search(basename)
+        if fm and _filename_time_likely_gemini_export(basename, int(fm.group(5))):
+            file_ini = ""
 
     meta["hora_inicio"] = body_ini or file_ini or ""
     meta["hora_fin"] = body_fin or ""

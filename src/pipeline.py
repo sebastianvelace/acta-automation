@@ -110,6 +110,7 @@ def run_acta_pipeline(
         parsed["raw_text"],
         proximos_items=proximos if proximos else None,
         metadata=parsed["metadata"],
+        source_filename=name,
     )
 
     data = apply_metadata_times_to_acta(data, parsed["metadata"])

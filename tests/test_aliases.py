@@ -4,9 +4,12 @@ import pytest
 
 from src.aliases import (
     TEAM_ALIASES,
+    apply_growfik_visibility_policy,
     build_compromisos_from_proximos_pasos,
     client_account_responsable,
+    client_compromiso_responsable_from_tag,
     compose_cliente_heading,
+    dedupe_asuntos_tratados,
     is_gorila_responsable,
     lookup_team_alias,
     merge_invitados_from_gorila_teams,
@@ -125,7 +128,7 @@ def test_reclassify_moves_person_to_cliente() -> None:
     )
     assert gorila == []
     assert len(cliente) == 1
-    assert cliente[0]["responsable"] == "Real State"
+    assert cliente[0]["responsable"] == "Pedro Cliente Externo"
 
 
 def test_client_account_responsable_extracts_account_suffix() -> None:
@@ -228,3 +231,46 @@ def test_merge_invitados_from_gorila_teams() -> None:
     assert merged[1]["nombre"] == "Marketing"
     assert merged[2]["nombre"] == "Social Media"
     assert merged[3]["nombre"] == "Camilo Linares Jiménez"
+
+
+def test_client_compromiso_responsable_all_caps_pedro() -> None:
+    name = client_compromiso_responsable_from_tag(
+        "PEDRO ANTONIO RODRIGUEZ HERNANDEZ",
+        client_label="Universal",
+    )
+    assert name == "Pedro Antonio Rodríguez Hernández"
+
+
+def test_dedupe_asuntos_substring_overlap() -> None:
+    out = dedupe_asuntos_tratados(
+        [
+            {"titulo": "Estado del informe", "descripcion": "Corto."},
+            {
+                "titulo": "Estado del informe pendiente",
+                "descripcion": "Descripción larga con más detalle del informe pendiente.",
+            },
+        ]
+    )
+    assert len(out) == 1
+    assert "larga" in out[0]["descripcion"]
+
+
+def test_scrub_growfik_non_universal() -> None:
+    out = apply_growfik_visibility_policy(
+        {
+            "objetivo": "Coordinación con Growfik y Gorila.",
+            "invitados": [{"nombre": "David", "puesto": "Analítica Growfik", "correo": "x@growfik.com"}],
+        },
+        universal=False,
+    )
+    assert "growfik" not in out["objetivo"].casefold()
+    assert "Gorila Hosting" in out["objetivo"]
+    assert "growfik" not in out["invitados"][0]["puesto"].casefold()
+
+
+def test_universal_keeps_growfik_in_puesto() -> None:
+    out = apply_growfik_visibility_policy(
+        {"invitados": [{"nombre": "David", "puesto": "Analítica Growfik", "correo": "x@growfik.com"}]},
+        universal=True,
+    )
+    assert "Growfik" in out["invitados"][0]["puesto"]

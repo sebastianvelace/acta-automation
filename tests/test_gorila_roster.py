@@ -112,7 +112,7 @@ def test_client_not_on_roster_stays_cliente() -> None:
     )
     assert g == []
     assert len(c) == 1
-    assert c[0]["responsable"] == "Real State"
+    assert c[0]["responsable"] == "Pedro Cliente Externo"
 
 
 def test_omar_escobedo_routes_to_gorila() -> None:
@@ -135,7 +135,15 @@ def test_omar_escobedo_routes_to_gorila() -> None:
 def test_growfik_email_enriches_invitado() -> None:
     row = invitado_fields_from_email("davidgutierrez@growfik.com")
     assert row["nombre"] == "David Gutiérrez"
-    assert "Pauta" in row["puesto"] or "CRM" in row["puesto"]
+    assert "Gorila" in row["puesto"]
+    assert "growfik" not in row["puesto"].casefold()
+
+    universal_row = invitado_fields_from_email("davidgutierrez@growfik.com", universal=True)
+    assert "Growfik" in universal_row["puesto"]
+
+    gresly_row = invitado_fields_from_email("community1.growfik@gmail.com", universal=True)
+    assert gresly_row["nombre"] == "Gresly"
+    assert "Growfik" in gresly_row["puesto"]
 
 
 @pytest.mark.parametrize("row", load_gorila_staff(), ids=lambda m: m.canonical_name)

@@ -201,6 +201,12 @@ def extract_fecha_entrega(text: str, meeting_date: date | None) -> str:
     if not blob:
         return ""
 
+    if meeting_date and re.search(
+        r"(?i)\b(?:en\s+)?(?:aproximadamente\s+|una\s+)?1\s+hora\b|\bdentro\s+de\s+1\s+hora\b",
+        blob,
+    ):
+        return f"{meeting_date.day} de {_ES_MONTH_NAMES[meeting_date.month - 1]} de {meeting_date.year}, 1 hora después de la reunión"
+
     has_manana = bool(
         re.search(r"(?i)\bmañana\b", blob) or re.search(r"(?i)d[ií]a\s+de\s+mañana", blob)
     )

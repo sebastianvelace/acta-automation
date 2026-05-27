@@ -8,7 +8,7 @@ import re
 from typing import Any
 
 from src.dates import fecha_entrega_for_compromiso
-from src.client_contacts import invitado_fields_from_client_email
+from src.client_contacts import invitado_fields_from_client_email, lookup_client_contact_by_name
 from src.gorila_roster import (
     invitado_fields_from_email,
     invitado_fields_from_name,
@@ -88,12 +88,17 @@ _GORILA_RESPONSABLE_MARKERS = (
 _GROWFIK_DISPLAY = re.compile(r"(?i)\bgrowfik\b")
 
 
-def normalize_gorila_compromiso_responsable_display(responsable: str) -> str:
+def normalize_gorila_compromiso_responsable_display(
+    responsable: str,
+    *,
+    universal: bool = False,
+) -> str:
     """
     Texto visible en acta: usar siempre nomenclatura **Gorila Hosting**, nunca marcas legacy.
+    En actas Universal (``universal=True``) se conserva la marca Growfik.
     """
     s = _strip_bracket_tag((responsable or "").strip())
-    if not s:
+    if not s or universal:
         return s
     return _GROWFIK_DISPLAY.sub("Gorila Hosting", s)
 
@@ -153,6 +158,156 @@ def _looks_like_person_name(s: str) -> bool:
         return False
     letterish = sum(1 for ch in s if ch.isalpha())
     return letterish >= len(s) * 0.6
+
+
+def _normalize_proximos_person_name(tag: str) -> str:
+    """Title-case ALL CAPS person tags from Gemini Próximos pasos."""
+    raw = (tag or "").strip()
+    if not raw or not _looks_like_person_name(raw):
+        return raw
+    if raw.isupper():
+        return " ".join(part.capitalize() for part in raw.split())
+    return raw
+
+
+def client_compromiso_responsable_from_tag(tag: str, *, client_label: str) -> str:
+    """
+    Responsable visible en compromisos_cliente: persona del tag Próximos pasos si aplica;
+    si no, nombre de cuenta (client_label).
+    """
+    raw = _strip_bracket_tag((tag or "").strip())
+    if not raw or raw.casefold() == client_label.casefold():
+        return client_label
+    if is_gorila_responsable(raw) or is_gorila_group_commitment_tag(raw):
+        return client_label
+    parts = raw.split()
+    if len(parts) == 1:
+        token = parts[0]
+        if token.isalpha() and len(token) >= 3:
+            single = token.capitalize() if token.isupper() else token
+            contact = lookup_client_contact_by_name(single)
+            return contact.name if contact else single
+        return client_label
+    normalized = _normalize_proximos_person_name(raw)
+    if _looks_like_person_name(normalized) and normalized.casefold() != client_label.casefold():
+        contact = lookup_client_contact_by_name(normalized)
+        return contact.name if contact else normalized
+    return client_label
+
+
+_ASUNTO_STOPWORDS = frozenset(
+    {"de", "el", "la", "los", "las", "en", "y", "a", "del", "al", "un", "una", "por", "con"}
+)
+
+
+def _normalize_asunto_titulo(titulo: str) -> str:
+    s = re.sub(r"^\s*\d+[.)]\s*", "", (titulo or "").strip())
+    s = re.sub(r"[^\w\s]", " ", s, flags=re.UNICODE)
+    tokens = [t for t in s.casefold().split() if t and t not in _ASUNTO_STOPWORDS]
+    return " ".join(tokens)
+
+
+def _asunto_titulos_overlap(a: str, b: str) -> bool:
+    na, nb = _normalize_asunto_titulo(a), _normalize_asunto_titulo(b)
+    if not na or not nb:
+        return False
+    if na == nb or na in nb or nb in na:
+        return True
+    ta, tb = set(na.split()), set(nb.split())
+    if not ta or not tb:
+        return False
+    return len(ta & tb) / len(ta | tb) >= 0.65
+
+
+def dedupe_asuntos_tratados(asuntos: list[Any]) -> list[dict[str, str]]:
+    """Elimina asuntos duplicados (p. ej. eco Resumen vs Detalles); conserva la descripción más larga."""
+    rows: list[dict[str, str]] = []
+    for raw in asuntos or []:
+        if not isinstance(raw, dict):
+            continue
+        titulo = (raw.get("titulo") or "").strip()
+        desc = (raw.get("descripcion") or "").strip()
+        if not titulo and not desc:
+            continue
+        rows.append({"titulo": titulo or "Sin título", "descripcion": desc})
+    kept: list[dict[str, str]] = []
+    for row in rows:
+        merged = False
+        for idx, existing in enumerate(kept):
+            if _asunto_titulos_overlap(row["titulo"], existing["titulo"]):
+                if len(row.get("descripcion") or "") > len(existing.get("descripcion") or ""):
+                    kept[idx] = row
+                merged = True
+                break
+        if not merged:
+            kept.append(row)
+    return kept
+
+
+def is_universal_acta(
+    *,
+    cliente: str = "",
+    titulo: str = "",
+    attendee_emails: list[str] | None = None,
+    source_filename: str = "",
+) -> bool:
+    blob = " ".join(filter(None, [cliente, titulo, source_filename]))
+    if "universal" in blob.casefold():
+        return True
+    return any("@universal.edu.co" in (e or "").casefold() for e in (attendee_emails or []))
+
+
+def _scrub_growfik_text(value: str) -> str:
+    return _GROWFIK_DISPLAY.sub("Gorila Hosting", value or "")
+
+
+def apply_growfik_visibility_policy(
+    data: dict[str, Any],
+    *,
+    universal: bool,
+) -> dict[str, Any]:
+    """En actas no Universal, reemplaza menciones visibles de Growfik por Gorila Hosting."""
+    if universal:
+        return data
+    out = dict(data)
+    for key in ("objetivo", "cierre", "cliente", "titulo", "lugar"):
+        if isinstance(out.get(key), str):
+            out[key] = _scrub_growfik_text(out[key])
+    invitados: list[dict[str, str]] = []
+    for inv in out.get("invitados") or []:
+        if not isinstance(inv, dict):
+            continue
+        row = dict(inv)
+        for field in ("nombre", "puesto"):
+            if isinstance(row.get(field), str):
+                row[field] = _scrub_growfik_text(row[field])
+        invitados.append(row)
+    if invitados:
+        out["invitados"] = invitados
+    for key in ("compromisos_gorila", "compromisos_cliente"):
+        rows: list[dict[str, str]] = []
+        for item in out.get(key) or []:
+            if not isinstance(item, dict):
+                continue
+            row = dict(item)
+            for field in ("tarea", "responsable"):
+                if isinstance(row.get(field), str):
+                    row[field] = _scrub_growfik_text(row[field])
+            rows.append(row)
+        out[key] = rows
+    asuntos: list[dict[str, str]] = []
+    for item in out.get("asuntos_tratados") or []:
+        if not isinstance(item, dict):
+            continue
+        asuntos.append(
+            {
+                "titulo": _scrub_growfik_text(str(item.get("titulo") or "")),
+                "descripcion": _scrub_growfik_text(str(item.get("descripcion") or "")),
+            }
+        )
+    if asuntos:
+        out["asuntos_tratados"] = asuntos
+    return out
 
 
 def apply_alias_to_asistente_row(nombre: str, puesto: str) -> dict[str, str]:
@@ -245,15 +400,19 @@ def _merged_gorila_emails(dynamic: list[str] | None) -> list[str]:
     return list(base)
 
 
-def _display_gorila_assignee(tag_or_responsable: str) -> str:
+def _display_gorila_assignee(tag_or_responsable: str, *, universal: bool = False) -> str:
     raw = _strip_bracket_tag((tag_or_responsable or "").strip())
-    return normalize_gorila_compromiso_responsable_display(responsable_for_tag(raw))
+    return normalize_gorila_compromiso_responsable_display(
+        responsable_for_tag(raw),
+        universal=universal,
+    )
 
 
 def build_invitados_from_attendee_emails(
     emails: list[str],
     *,
     cliente_account: str = "",
+    universal: bool = False,
 ) -> list[dict[str, str]]:
     """
     Invitados del acta: correos del bloque Invitado, enriquecidos con roster Gorila (O(1) por email).
@@ -268,7 +427,11 @@ def build_invitados_from_attendee_emails(
         if key in seen:
             continue
         seen.add(key)
-        rows.append(invitado_fields_from_email(email, cliente_account=cliente_account))
+        rows.append(
+            invitado_fields_from_email(
+                email, cliente_account=cliente_account, universal=universal
+            )
+        )
     return rows
 
 
@@ -349,6 +512,7 @@ def merge_invitados_from_proximos_tags(
     *,
     gorila_person_names: list[str] | None = None,
     gorila_emails: list[str] | None = None,
+    universal: bool = False,
 ) -> list[dict[str, str]]:
     """Añade invitados internos que aparecen en tags de Próximos pasos pero no en correos."""
     if not proximos_items:
@@ -363,7 +527,7 @@ def merge_invitados_from_proximos_tags(
             gorila_emails=gorila_emails,
         ):
             continue
-        extra = invitado_fields_from_name(tag)
+        extra = invitado_fields_from_name(tag, universal=universal)
         if not extra:
             continue
         key = _invitado_dedupe_key(extra)
@@ -485,11 +649,12 @@ def build_compromisos_from_proximos_pasos(
     gorila_emails: list[str] | None = None,
     cliente_responsable: str | None = None,
     meeting_date_str: str = "",
+    universal: bool = False,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     """
     Deterministic routing from Gemini ``Próximos pasos``:
     [El grupo] / [Todos] → only ``compromisos_gorila`` with inferred Gorila responsable;
-    client-side tags → ``compromisos_cliente`` with ``responsable`` = empresa/cuenta.
+    client-side tags → ``compromisos_cliente`` with ``responsable`` = persona del tag o cuenta.
     """
     out_g: list[dict[str, str]] = []
     out_c: list[dict[str, str]] = []
@@ -500,28 +665,36 @@ def build_compromisos_from_proximos_pasos(
         desc = (it.get("descripcion") or "").strip()
         if not desc:
             continue
+        client_resp = client_compromiso_responsable_from_tag(tag, client_label=client_label)
         row = {
             "tarea": desc,
             "responsable": "",
             "fecha_entrega": fecha_entrega_for_compromiso(desc, meeting_date_str),
         }
         if _is_client_deliverable_despite_gorila_tag(tag, desc):
-            row["responsable"] = client_label
+            row["responsable"] = client_resp
             out_c.append(dict(row))
         elif is_gorila_group_commitment_tag(tag):
-            row["responsable"] = normalize_gorila_compromiso_responsable_display(inferred)
+            row["responsable"] = normalize_gorila_compromiso_responsable_display(
+                inferred,
+                universal=universal,
+            )
             out_g.append(dict(row))
         elif is_gorila_responsable(tag) or is_internal_gorila_assignee(
             tag,
             gorila_person_names=gorila_person_names,
             gorila_emails=gorila_emails,
         ):
-            row["responsable"] = _display_gorila_assignee(tag)
+            row["responsable"] = _display_gorila_assignee(tag, universal=universal)
             out_g.append(dict(row))
         else:
-            row["responsable"] = client_label
+            row["responsable"] = client_resp
             out_c.append(dict(row))
     return out_g, out_c
+
+
+def _strip_trailing_punctuation(value: str) -> str:
+    return (value or "").strip().rstrip(".,;:")
 
 
 def compose_cliente_heading(titulo: str, cliente: str) -> str:
@@ -531,8 +704,8 @@ def compose_cliente_heading(titulo: str, cliente: str) -> str:
     Manual actas use values like ``Revisión Pauta - Real State``. When the LLM
     already returns that full string in ``cliente``, it is preserved as-is.
     """
-    t = (titulo or "").strip()
-    c = (cliente or "").strip()
+    t = _strip_trailing_punctuation(titulo)
+    c = _strip_trailing_punctuation(cliente)
     if not c:
         return t or "No especificado"
     if not t:
@@ -591,6 +764,7 @@ def reclassify_compromisos(
     gorila_person_names: list[str] | None = None,
     gorila_emails: list[str] | None = None,
     cliente_responsable: str | None = None,
+    universal: bool = False,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     """
     Route commitments by responsable: Gorila Hosting teams → gorila;
@@ -616,7 +790,10 @@ def reclassify_compromisos(
         k = _key(item)
         if is_shared_responsable(resp):
             dup = dict(item)
-            dup["responsable"] = normalize_gorila_compromiso_responsable_display(inferred)
+            dup["responsable"] = normalize_gorila_compromiso_responsable_display(
+                inferred,
+                universal=universal,
+            )
             if k not in seen_g:
                 seen_g.add(k)
                 out_gorila.append(dup)
@@ -628,13 +805,18 @@ def reclassify_compromisos(
             if k not in seen_g:
                 seen_g.add(k)
                 normed = dict(item)
-                normed["responsable"] = _display_gorila_assignee(normed["responsable"])
+                normed["responsable"] = _display_gorila_assignee(
+                    normed["responsable"],
+                    universal=universal,
+                )
                 out_gorila.append(normed)
         else:
             if k not in seen_c:
                 seen_c.add(k)
                 dup = dict(item)
-                dup["responsable"] = client_label
+                dup["responsable"] = client_compromiso_responsable_from_tag(
+                    resp, client_label=client_label
+                )
                 out_cliente.append(dup)
 
     return out_gorila, out_cliente
@@ -678,6 +860,7 @@ def finalize_acta_after_llm(
     *,
     proximos_items: list[dict[str, str]] | None,
     metadata: dict[str, Any] | None = None,
+    source_filename: str = "",
 ) -> dict[str, Any]:
     """Compromisos determinísticos + participantes por correo (post LLM)."""
     _ = raw_text
@@ -688,9 +871,16 @@ def finalize_acta_after_llm(
     attendee_emails = meta.get("attendee_emails") or meta.get("client_emails") or []
 
     out = dict(data)
+    titulo = str(out.get("titulo") or "")
     cliente_label = client_account_responsable(
         str(out.get("cliente") or ""),
-        str(out.get("titulo") or ""),
+        titulo,
+    )
+    universal = is_universal_acta(
+        cliente=str(out.get("cliente") or ""),
+        titulo=titulo,
+        attendee_emails=attendee_emails,
+        source_filename=source_filename,
     )
     meeting_date_str = str(out.get("fecha") or meta.get("date") or "")
     if proximos_items:
@@ -701,6 +891,7 @@ def finalize_acta_after_llm(
             gorila_emails=gorila_emails,
             cliente_responsable=cliente_label,
             meeting_date_str=meeting_date_str,
+            universal=universal,
         )
         out["compromisos_gorila"] = g
         out["compromisos_cliente"] = c
@@ -712,17 +903,23 @@ def finalize_acta_after_llm(
             gorila_person_names=gorila_person_names,
             gorila_emails=gorila_emails,
             cliente_responsable=cliente_label,
+            universal=universal,
         )
         out["compromisos_gorila"] = g
         out["compromisos_cliente"] = c
 
-    invitados = build_invitados_from_attendee_emails(attendee_emails, cliente_account=cliente_label)
+    invitados = build_invitados_from_attendee_emails(
+        attendee_emails,
+        cliente_account=cliente_label,
+        universal=universal,
+    )
     invitados = merge_invitados_from_gorila_teams(invitados, teams)
     invitados = merge_invitados_from_proximos_tags(
         invitados,
         proximos_items,
         gorila_person_names=gorila_person_names,
         gorila_emails=gorila_emails,
+        universal=universal,
     )
     _enrich_invitados_from_proximos_names(
         invitados,
@@ -731,9 +928,9 @@ def finalize_acta_after_llm(
         gorila_emails=gorila_emails,
     )
     out["invitados"] = invitados
-    titulo = str(out.get("titulo") or "")
     out["cliente"] = compose_cliente_heading(titulo, str(out.get("cliente") or ""))
-    return out
+    out["asuntos_tratados"] = dedupe_asuntos_tratados(out.get("asuntos_tratados"))
+    return apply_growfik_visibility_policy(out, universal=universal)
 
 
 def _is_fallback_invitado(row: dict[str, str]) -> bool:
@@ -770,11 +967,12 @@ def _enrich_invitados_from_proximos_names(
             tag, gorila_person_names=gorila_person_names, gorila_emails=gorila_emails
         ):
             continue
-        if _looks_like_person_name(tag) and not tag.isupper():
-            key = tag.casefold()
+        normalized = _normalize_proximos_person_name(tag)
+        if _looks_like_person_name(normalized):
+            key = normalized.casefold()
             if key not in seen:
                 seen.add(key)
-                client_names.append(tag)
+                client_names.append(normalized)
     if not client_names:
         return
     fallback_idxs = [i for i, row in enumerate(invitados) if _is_fallback_invitado(row)]
@@ -799,6 +997,12 @@ def post_process_acta(
     out["cliente"] = compose_cliente_heading(titulo, cliente_raw)
     cliente_label = client_account_responsable(out["cliente"], titulo)
     teams = (metadata or {}).get("gorila_teams") or []
+    attendee_emails = (metadata or {}).get("attendee_emails") or []
+    universal = is_universal_acta(
+        cliente=out["cliente"],
+        titulo=titulo,
+        attendee_emails=attendee_emails,
+    )
     out["compromisos_gorila"], out["compromisos_cliente"] = reclassify_compromisos(
         data.get("compromisos_gorila"),
         data.get("compromisos_cliente"),
@@ -806,5 +1010,7 @@ def post_process_acta(
         gorila_person_names=(metadata or {}).get("gorila_person_names") or [],
         gorila_emails=_merged_gorila_emails((metadata or {}).get("gorila_emails")),
         cliente_responsable=cliente_label,
+        universal=universal,
     )
-    return out
+    out["asuntos_tratados"] = dedupe_asuntos_tratados(out.get("asuntos_tratados"))
+    return apply_growfik_visibility_policy(out, universal=universal)

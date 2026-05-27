@@ -48,7 +48,7 @@ def test_compromisos_one_row_per_proximo() -> None:
     assert len(g) + len(c) == len(items)
     for row in g + c:
         assert "; " not in row["tarea"]
-    assert all(r["responsable"] == "Real State" for r in c)
+    assert all(r["responsable"] == "Camilo Linares Jiménez" for r in c)
     assert any(r["responsable"] == "Social Media Gorila Hosting" for r in g)
 
 

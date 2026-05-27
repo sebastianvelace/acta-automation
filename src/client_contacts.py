@@ -1,6 +1,7 @@
 """Contactos cliente conocidos por email (data/client_contacts.yaml)."""
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -53,6 +54,22 @@ def lookup_client_contact(email: str) -> ClientContact | None:
     if not key:
         return None
     return _contacts_by_email().get(key)
+
+
+def _fold_person_name(name: str) -> str:
+    nfd = unicodedata.normalize("NFD", (name or "").casefold())
+    return "".join(ch for ch in nfd if unicodedata.category(ch) != "Mn")
+
+
+def lookup_client_contact_by_name(name: str) -> ClientContact | None:
+    """Match contacto YAML por nombre (ignora tildes y mayúsculas)."""
+    target = _fold_person_name(name)
+    if not target:
+        return None
+    for contact in load_client_contacts():
+        if _fold_person_name(contact.name) == target:
+            return contact
+    return None
 
 
 def invitado_fields_from_client_email(email: str) -> dict[str, str] | None:

@@ -189,6 +189,29 @@ def format_staff_puesto(role: str) -> str:
     return f"{r} Gorila"
 
 
+def _is_growfik_branded_email(email: str) -> bool:
+    """True for @growfik.com or local-part containing growfik (e.g. community1.growfik@gmail.com)."""
+    e = (email or "").casefold().strip()
+    if not e:
+        return False
+    if e.endswith("@growfik.com"):
+        return True
+    local, _, _ = e.partition("@")
+    return "growfik" in local
+
+
+def format_staff_puesto_for_acta(role: str, *, universal: bool, email: str = "") -> str:
+    """Universal actas show Growfik brand for growfik-branded staff emails; others use Gorila."""
+    r = (role or "").strip()
+    if not r:
+        return ""
+    if universal and _is_growfik_branded_email(email):
+        if "growfik" in r.casefold():
+            return r
+        return f"{r} Growfik"
+    return format_staff_puesto(r)
+
+
 _GENERIC_EMAIL_DOMAINS = frozenset(
     {
         "gmail.com",
@@ -300,6 +323,7 @@ def invitado_fields_from_email(
     email: str,
     *,
     cliente_account: str = "",
+    universal: bool = False,
 ) -> dict[str, str]:
     """
     Enriquece fila de invitados: roster Gorila → contacto cliente YAML → fallback legible por email.
@@ -310,7 +334,7 @@ def invitado_fields_from_email(
         return {
             "correo": raw,
             "nombre": member.canonical_name,
-            "puesto": format_staff_puesto(member.role),
+            "puesto": format_staff_puesto_for_acta(member.role, universal=universal, email=raw),
             "asistencia": "Confirmado",
         }
     client_row = invitado_fields_from_client_email(raw)
@@ -319,7 +343,11 @@ def invitado_fields_from_email(
     return invitado_fallback_from_email(raw, cliente_account=cliente_account)
 
 
-def invitado_fields_from_name(tag_or_name: str) -> dict[str, str] | None:
+def invitado_fields_from_name(
+    tag_or_name: str,
+    *,
+    universal: bool = False,
+) -> dict[str, str] | None:
     """Fila de invitado desde nombre/tag (p. ej. persona interna en Próximos pasos sin correo)."""
     raw = _strip_bracket_tag((tag_or_name or "").strip())
     if not raw:
@@ -331,7 +359,7 @@ def invitado_fields_from_name(tag_or_name: str) -> dict[str, str] | None:
     return {
         "correo": email,
         "nombre": member.canonical_name,
-        "puesto": format_staff_puesto(member.role),
+        "puesto": format_staff_puesto_for_acta(member.role, universal=universal, email=email),
         "asistencia": "Confirmado",
     }
 
