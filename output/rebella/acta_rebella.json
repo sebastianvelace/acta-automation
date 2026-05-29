@@ -1,0 +1,192 @@
+{
+  "metadata": {
+    "date": "may 28, 2026",
+    "attendees": [
+      "Administración Gorila Hosting",
+      "Social Media Gorila Hosting",
+      "Marketing Gorila Hosting",
+      "Web Gorila Hosting",
+      "diana@rebella.com.mx",
+      "sebasneiza.gercotek@gmail.com"
+    ],
+    "gorila_teams": [
+      "Administración Gorila Hosting",
+      "Social Media Gorila Hosting",
+      "Marketing Gorila Hosting",
+      "Web Gorila Hosting"
+    ],
+    "attendee_emails": [
+      "diana@rebella.com.mx",
+      "sebasneiza.gercotek@gmail.com"
+    ],
+    "gorila_emails": [],
+    "client_emails": [
+      "diana@rebella.com.mx",
+      "sebasneiza.gercotek@gmail.com"
+    ],
+    "gorila_person_names": [],
+    "hora_inicio": "2:01 PM",
+    "hora_fin": "",
+    "calendar_url": "",
+    "is_virtual": true
+  },
+  "acta": {
+    "titulo": "Seguimiento Rebella",
+    "fecha": "28 de mayo de 2026",
+    "hora_inicio": "2:01 PM",
+    "hora_fin": "3:01 PM",
+    "lugar": "Google Meet",
+    "cliente": "Seguimiento Rebella",
+    "objetivo": "Definir estrategias SEO avanzadas y técnicas de optimización digital para fortalecer la marca comercialmente, enfocándose en un servicio integral para el mercado mexicano y extranjero.",
+    "cierre": "Se reafirmó el compromiso de presentar la estrategia detallada en ocho días y se agradeció al contacto rebella por su disposición a colaborar. Se reiteró el objetivo de lograr un posicionamiento efectivo tanto en buscadores tradicionales como en sistemas de inteligencia artificial. La próxima reunión de seguimiento se realizará el jueves.",
+    "invitados": [
+      {
+        "correo": "",
+        "nombre": "Administración",
+        "puesto": "Organizador",
+        "asistencia": "Confirmado"
+      },
+      {
+        "correo": "",
+        "nombre": "Marketing",
+        "puesto": "Gorila Hosting",
+        "asistencia": "Confirmado"
+      },
+      {
+        "correo": "",
+        "nombre": "Social Media",
+        "puesto": "Gorila Hosting",
+        "asistencia": "Confirmado"
+      },
+      {
+        "correo": "",
+        "nombre": "Web",
+        "puesto": "Gorila Hosting",
+        "asistencia": "Confirmado"
+      },
+      {
+        "correo": "diana@rebella.com.mx",
+        "nombre": "Diana",
+        "puesto": "Rebella",
+        "asistencia": "Confirmado"
+      },
+      {
+        "correo": "sebasneiza.gercotek@gmail.com",
+        "nombre": "Sebastian Neiza",
+        "puesto": "Rebella",
+        "asistencia": "Confirmado"
+      },
+      {
+        "correo": "",
+        "nombre": "Darío",
+        "puesto": "Especialista SEO Gorila",
+        "asistencia": "Confirmado"
+      }
+    ],
+    "asuntos_tratados": [
+      {
+        "titulo": "Introducción a la estrategia SEO",
+        "descripcion": "Marketing Gorila Hosting dio inicio a la reunión presentando a SEO - Gorila Hosting (Darío) como el líder encargado de la estrategia de optimización en buscadores. El objetivo principal es estructurar la presencia digital de la marca del contacto rebella, enfocándose en un servicio integral para el mercado mexicano y extranjero."
+      },
+      {
+        "titulo": "Conceptos de SEO, AEO y GEO",
+        "descripcion": "SEO - Gorila Hosting introdujo la tríada esencial para la nueva tecnología digital: SEO (motores de búsqueda), AEO (optimización de motores de respuesta) y GEO (geolocalización). Se destacó el concepto de 'cero clic', donde las inteligencias artificiales como ChatGPT y Gemini proporcionan respuestas directas."
+      },
+      {
+        "titulo": "Importancia del contenido integral",
+        "descripcion": "Se explicó que la estrategia actual requiere incluir una mayor cantidad de texto en blogs, publicaciones y la página web, superando la tendencia antigua de 'menos es más'. SEO - Gorila Hosting enfatizó que este contenido extenso es vital para alimentar a las inteligencias artificiales y educar al público sobre servicios mediante preguntas frecuentes."
+      },
+      {
+        "titulo": "Google My Business como herramienta estratégica",
+        "descripcion": "Se definió a Google My Business como una red social y directorio fundamental para el posicionamiento local. SEO - Gorila Hosting explicó que esta plataforma permite gestionar testimonios y publicar actualizaciones, lo cual es crítico para que la marca aparezca con información relevante y calificaciones visibles al realizar búsquedas en Google."
+      },
+      {
+        "titulo": "Gestión de tendencias y reportes",
+        "descripcion": "SEO - Gorila Hosting se comprometió a entregar informes semanales de tendencias, argumentando que el comportamiento digital actual cambia con mucha rapidez, no mensualmente. Esta información permitirá ajustar la estrategia de la marca y enfocarse en ciudades clave dentro de México."
+      },
+      {
+        "titulo": "Implementación de Zero-Link",
+        "descripcion": "Se introdujo el 'Zero-link' (o código de estructuración de datos), que permite que inteligencias artificiales como ChatGPT respondan preguntas específicas sobre la marca, incluyendo precios, servicios y promociones. Este código debe actualizarse cada 15 días para mantenerse alineado con las tendencias del mercado."
+      },
+      {
+        "titulo": "Reglas técnicas para redes sociales",
+        "descripcion": "Se advirtió que el uso de emojis en publicaciones está desaconsejado para el SEO de 2026, ya que pueden interferir con la lectura del algoritmo. Además, se discutieron estrategias específicas para plataformas: el uso de etiquetas de 'todos' o 'destacados' en Facebook y la regla de 'recompartir' en TikTok."
+      },
+      {
+        "titulo": "Formatos multimedia optimizados",
+        "descripcion": "Se informó que los formatos tradicionales como JPG, PNG y GIF están siendo reemplazados por WebP para imágenes y WebM para videos. Estos formatos permiten comprimir la información sin perder calidad, resultando más amigables para el SEO y mejorando la velocidad de carga de la página web."
+      },
+      {
+        "titulo": "Estrategia de publicaciones y servicios",
+        "descripcion": "Para presentar múltiples servicios, SEO - Gorila Hosting sugirió no lanzar toda la información simultáneamente, sino publicar dos servicios importantes cada tres días. Se recomendó enfocar los días lunes, martes y miércoles en la venta, dejando jueves y viernes para contenido académico e informativo."
+      },
+      {
+        "titulo": "Presencia en plataformas digitales",
+        "descripcion": "Ante las dudas del contacto rebella sobre la viabilidad de LinkedIn, Marketing Gorila Hosting explicó que la estrategia busca aprovechar el formato de boletines informativos (newsletters) para crear comunidades cerradas y dirigir tráfico hacia la página web, complementando así la presencia en portafolios médicos como Doctoralia."
+      },
+      {
+        "titulo": "Canales de comunicación y grupos",
+        "descripcion": "SEO - Gorila Hosting recomendó crear canales de WhatsApp para difusión, ya que no requieren un mínimo de seguidores como Facebook o Instagram. Asimismo, se sugirió aprovechar el 'matrimonio' entre las páginas de empresa (fanpages) y los grupos de Facebook para replicar publicaciones y maximizar el alcance orgánico local."
+      },
+      {
+        "titulo": "Resultados y expectativas de tiempo",
+        "descripcion": "SEO - Gorila Hosting aclaró que el posicionamiento SEO no es inmediato, estimando un periodo de dos a tres meses para que los servidores se refresquen y el tráfico comience a consolidarse. Se enfatizó la necesidad de mantener la constancia durante este tiempo."
+      },
+      {
+        "titulo": "Eventos y tácticas de marketing",
+        "descripcion": "SEO - Gorila Hosting sugirió participar en eventos de salud relevantes, como Expobelleza en Medellín, para generar alianzas. También recomendó priorizar campañas pagadas en Instagram sobre el marketing de influencers, argumentando que Meta es la plataforma más efectiva para la conversión de ventas."
+      },
+      {
+        "titulo": "Seguridad de plataformas y métricas",
+        "descripcion": "Tras discutir las preocupaciones sobre el uso de Metricool, Administración Gorila Hosting y SEO - Gorila Hosting aclararon que los riesgos de baneo ocurren principalmente en cuentas gratuitas. Se demostró el uso de la herramienta AWStats en el panel de control (CPanel) del servidor como una alternativa segura para analizar el tráfico."
+      },
+      {
+        "titulo": "Interpretación de métricas en CPanel",
+        "descripcion": "SEO - Gorila Hosting detalló cómo leer las estadísticas en CPanel, identificando fuentes de tráfico (búsquedas, redes sociales, invitaciones), horas pico y los navegadores más utilizados. Se recomendó revisar estos datos el primer día de cada mes para ajustar la estrategia."
+      },
+      {
+        "titulo": "Frecuencia de reuniones",
+        "descripcion": "Se acordó que las reuniones de seguimiento de redes sociales se realizarán los jueves. Además, se confirmó una reunión técnica específica sobre la construcción de la página web para las 3:00 p.m. del mismo día."
+      }
+    ],
+    "compromisos_gorila": [
+      {
+        "tarea": "Entregar la planeación de la marca al cliente en 8 días.",
+        "responsable": "Marketing Gorila Hosting",
+        "fecha_entrega": "No especificada"
+      },
+      {
+        "tarea": "Enviar al equipo actualizaciones sobre cambios en el mercado semanalmente.",
+        "responsable": "Darío",
+        "fecha_entrega": "No especificada"
+      },
+      {
+        "tarea": "Explicar al personal el uso de plataformas nuevas emergentes en el mercado internacional.",
+        "responsable": "Darío",
+        "fecha_entrega": "No especificada"
+      },
+      {
+        "tarea": "Inscribir la marca en canales digitales internacionales y mostrar la estructura SEO planificada.",
+        "responsable": "Darío",
+        "fecha_entrega": "No especificada"
+      },
+      {
+        "tarea": "Apoyar a la nueva red social solicitando a los colaboradores que sigan la cuenta.",
+        "responsable": "Marketing & Administración Gorila Hosting",
+        "fecha_entrega": "No especificada"
+      },
+      {
+        "tarea": "Exponer el plan de trabajo basado en los puntos enviados por WhatsApp en 8 días.",
+        "responsable": "Marketing Gorila Hosting",
+        "fecha_entrega": "No especificada"
+      },
+      {
+        "tarea": "Requerir un espacio de encuentro con Sebastian en caso de identificar dudas o necesidades adicionales durante el proceso.",
+        "responsable": "Marketing Gorila Hosting",
+        "fecha_entrega": "No especificada"
+      }
+    ],
+    "compromisos_cliente": [],
+    "hora_final": "3:01 PM"
+  }
+}

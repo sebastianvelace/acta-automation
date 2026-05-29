@@ -1,6 +1,7 @@
 """Contactos cliente conocidos por email (data/client_contacts.yaml)."""
 from __future__ import annotations
 
+import re
 import unicodedata
 from dataclasses import dataclass
 from functools import lru_cache
@@ -61,6 +62,11 @@ def _fold_person_name(name: str) -> str:
     return "".join(ch for ch in nfd if unicodedata.category(ch) != "Mn")
 
 
+def fold_person_name(name: str) -> str:
+    """Case- and accent-insensitive key for matching people."""
+    return _fold_person_name(name)
+
+
 def lookup_client_contact_by_name(name: str) -> ClientContact | None:
     """Match contacto YAML por nombre (ignora tildes y mayúsculas)."""
     target = _fold_person_name(name)
@@ -70,6 +76,22 @@ def lookup_client_contact_by_name(name: str) -> ClientContact | None:
         if _fold_person_name(contact.name) == target:
             return contact
     return None
+
+
+def is_known_client_person(name: str) -> bool:
+    """True si el nombre coincide con un contacto cliente (completo o primer nombre)."""
+    cleaned = re.sub(r"(?<=\w)\.(?=\s+\w)", "", (name or "").strip())
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if lookup_client_contact_by_name(cleaned):
+        return True
+    token = _fold_person_name(cleaned.split()[0].rstrip("."))
+    if not token:
+        return False
+    for contact in load_client_contacts():
+        parts = _fold_person_name(contact.name).split()
+        if parts and parts[0] == token:
+            return True
+    return False
 
 
 def invitado_fields_from_client_email(email: str) -> dict[str, str] | None:

@@ -373,6 +373,10 @@ def canonical_responsable(member: GorilaStaff | None) -> str:
 def responsable_for_tag(tag_or_responsable: str) -> str:
     """Nombre canónico del roster si hay match; si no, el texto original limpio."""
     raw = _strip_bracket_tag((tag_or_responsable or "").strip())
+    if "," in raw:
+        parts = [p.strip() for p in raw.split(",") if p.strip()]
+        if len(parts) > 1:
+            return ", ".join(responsable_for_tag(p) for p in parts)
     member = match_roster_member(raw)
     if member:
         return member.canonical_name

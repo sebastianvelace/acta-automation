@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.aliases import finalize_acta_after_llm, is_universal_acta, lookup_team_alias, post_process_acta
+from src.client_contacts import fold_person_name, lookup_client_contact
 from src.google_workflow import apply_metadata_times_to_acta
 from src.gorila_roster import _is_growfik_branded_email
 from src.parser import extract_proximos_pasos_items, extract_text, is_gorila_email
@@ -26,11 +27,11 @@ from src.parser import extract_proximos_pasos_items, extract_text, is_gorila_ema
 DOCS: dict[str, str] = {
     "Ana Maria": (
         "/home/sebasvelace/Downloads/Seguimiento - Ana Maria Psicología_ "
-        "2026_05_21 08_30 GMT-05_00 - Notas de Gemini.docx"
+        "2026_05_28 08_31 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Universal Campañas": (
         "/home/sebasvelace/Downloads/Revisión Campañas - Universal Academia de Idiomas_ "
-        "2026_05_20 14_58 GMT-05_00 - Notas de Gemini.docx"
+        "2026_05_27 14_58 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Marlon": (
         "/home/sebasvelace/Downloads/Seguimiento Marlon Becerra a._ "
@@ -38,11 +39,11 @@ DOCS: dict[str, str] = {
     ),
     "Sambal": (
         "/home/sebasvelace/Downloads/Revisión Pauta - Sambal_ "
-        "2026_05_21 08_00 GMT-05_00 - Notas de Gemini.docx"
+        "2026_05_28 08_31 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Universal Dashboard": (
         "/home/sebasvelace/Downloads/Actualización Dashboard - Universal _ "
-        "2026_05_21 11_02 GMT-05_00 - Notas de Gemini (1).docx"
+        "2026_05_28 10_59 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Barrera": (
         "/home/sebasvelace/Downloads/Seguimiento Barrera Estrada_ "
@@ -60,18 +61,33 @@ DOCS: dict[str, str] = {
         "/home/sebasvelace/Downloads/Redes - Universal Idiomas._ "
         "2026_05_26 16_02 GMT-05_00 - Notas de Gemini.docx"
     ),
+    "Universal Seguimiento": (
+        "/home/sebasvelace/Downloads/Seguimiento - Universal Academia de Idiomas_ "
+        "2026_05_26 13_59 GMT-05_00 - Notas de Gemini.docx"
+    ),
+    "Lattir": (
+        "/home/sebasvelace/Downloads/Propuesta de Logo - Lattir_ "
+        "2026_05_26 16_00 GMT-05_00 - Notas de Gemini.docx"
+    ),
+    "Rebella": (
+        "/home/sebasvelace/Downloads/Seguimiento Rebella_ "
+        "2026_05_28 14_01 GMT-05_00 - Notas de Gemini.docx"
+    ),
 }
 
 EXPECTED_COUNTS: dict[str, tuple[int, int]] = {
-    "Ana Maria": (1, 4),
-    "Universal Campañas": (8, 0),
+    "Ana Maria": (5, 1),
+    "Universal Campañas": (4, 1),
     "Marlon": (2, 2),
-    "Sambal": (3, 2),
-    "Universal Dashboard": (8, 0),
+    "Sambal": (2, 1),
+    "Universal Dashboard": (6, 3),
     "Barrera": (2, 3),
     "Real State Seguimiento": (2, 5),
     "Universal Reporte Ventas": (0, 2),
     "Universal Redes": (5, 1),
+    "Universal Seguimiento": (6, 7),
+    "Lattir": (1, 1),
+    "Rebella": (7, 0),
 }
 
 
@@ -149,6 +165,25 @@ def _needs_growfik_puesto(email: str, *, universal: bool) -> bool:
     return universal and _is_growfik_branded_email(email)
 
 
+def _invitado_covers_email(email: str, rows: list[dict[str, Any]]) -> bool:
+    key = email.casefold()
+    for row in rows:
+        if str(row.get("correo") or "").casefold() == key:
+            return True
+    contact = lookup_client_contact(email)
+    if not contact:
+        return False
+    person = fold_person_name(contact.name)
+    for row in rows:
+        row_email = str(row.get("correo") or "")
+        row_contact = lookup_client_contact(row_email) if row_email else None
+        if row_contact and fold_person_name(row_contact.name) == person:
+            return True
+        if fold_person_name(str(row.get("nombre") or "")) == person:
+            return True
+    return False
+
+
 def score_invitados(acta: dict[str, Any], meta: dict[str, Any]) -> float:
     rows = acta.get("invitados") or []
     emails = meta.get("attendee_emails") or []
@@ -164,20 +199,34 @@ def score_invitados(acta: dict[str, Any], meta: dict[str, Any]) -> float:
     by_email = {str(r.get("correo") or "").casefold(): r for r in rows if isinstance(r, dict)}
     by_nombre = {str(r.get("nombre") or "").casefold(): r for r in rows if isinstance(r, dict)}
     for email in emails:
-        if email.casefold() not in by_email:
+        if not _invitado_covers_email(email, rows):
             pts -= 2.0
-        else:
-            row = by_email[email.casefold()]
-            puesto = str(row.get("puesto") or "")
-            nombre = str(row.get("nombre") or "")
-            if is_gorila_email(email):
-                if _needs_growfik_puesto(email, universal=universal):
-                    if "growfik" not in puesto.casefold():
-                        pts -= 1.5
-                elif "gorila" not in puesto.casefold():
+            continue
+        row = by_email.get(email.casefold())
+        if row is None:
+            contact = lookup_client_contact(email)
+            person = fold_person_name(contact.name) if contact else ""
+            for candidate in rows:
+                ce = str(candidate.get("correo") or "")
+                cc = lookup_client_contact(ce) if ce else None
+                if cc and fold_person_name(cc.name) == person:
+                    row = candidate
+                    break
+                if fold_person_name(str(candidate.get("nombre") or "")) == person:
+                    row = candidate
+                    break
+        if not row:
+            continue
+        puesto = str(row.get("puesto") or "")
+        nombre = str(row.get("nombre") or "")
+        if is_gorila_email(email):
+            if _needs_growfik_puesto(email, universal=universal):
+                if "growfik" not in puesto.casefold():
                     pts -= 1.5
-            if nombre.lower() in ("el grupo", "the group"):
-                pts -= 2.0
+            elif "gorila" not in puesto.casefold():
+                pts -= 1.5
+        if nombre.lower() in ("el grupo", "the group"):
+            pts -= 2.0
     for team in teams:
         alias = lookup_team_alias(team)
         if not alias:

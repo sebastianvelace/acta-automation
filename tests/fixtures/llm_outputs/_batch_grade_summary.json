@@ -9,10 +9,10 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 1,
-      "got_cliente": 4,
-      "exp_gorila": 1,
-      "exp_cliente": 4
+      "got_gorila": 5,
+      "got_cliente": 1,
+      "exp_gorila": 5,
+      "exp_cliente": 1
     },
     "cliente": "Seguimiento - Ana Maria Psicología",
     "lugar": "Google Meet",
@@ -28,14 +28,14 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 8,
-      "got_cliente": 0,
-      "exp_gorila": 8,
-      "exp_cliente": 0
+      "got_gorila": 4,
+      "got_cliente": 1,
+      "exp_gorila": 4,
+      "exp_cliente": 1
     },
     "cliente": "Revisión Campañas - Universal Academia de Idiomas",
     "lugar": "Google Meet",
-    "invitados_n": 8
+    "invitados_n": 7
   },
   {
     "label": "Marlon",
@@ -66,19 +66,33 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 3,
-      "got_cliente": 2,
-      "exp_gorila": 3,
-      "exp_cliente": 2
+      "got_gorila": 2,
+      "got_cliente": 1,
+      "exp_gorila": 2,
+      "exp_cliente": 1
     },
     "cliente": "Revisión Pauta - Sambal",
     "lugar": "Google Meet",
-    "invitados_n": 7
+    "invitados_n": 6
   },
   {
     "label": "Universal Dashboard",
-    "skipped": true,
-    "reason": "docx not found"
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 6,
+      "got_cliente": 3,
+      "exp_gorila": 6,
+      "exp_cliente": 3
+    },
+    "cliente": "Actualización Dashboard - Universal",
+    "lugar": "Google Meet",
+    "invitados_n": 8
   },
   {
     "label": "Barrera",
@@ -155,5 +169,62 @@
     "cliente": "Redes - Universal Idiomas",
     "lugar": "Google Meet",
     "invitados_n": 8
+  },
+  {
+    "label": "Universal Seguimiento",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 6,
+      "got_cliente": 7,
+      "exp_gorila": 6,
+      "exp_cliente": 7
+    },
+    "cliente": "Seguimiento - Universal Academia de Idiomas",
+    "lugar": "Google Meet",
+    "invitados_n": 15
+  },
+  {
+    "label": "Lattir",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 1,
+      "got_cliente": 1,
+      "exp_gorila": 1,
+      "exp_cliente": 1
+    },
+    "cliente": "Propuesta de Logo - Lattir",
+    "lugar": "Google Meet",
+    "invitados_n": 5
+  },
+  {
+    "label": "Rebella",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 7,
+      "got_cliente": 0,
+      "exp_gorila": 7,
+      "exp_cliente": 0
+    },
+    "cliente": "Seguimiento Rebella",
+    "lugar": "Google Meet",
+    "invitados_n": 7
   }
 ]

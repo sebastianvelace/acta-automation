@@ -1,0 +1,8 @@
+# Horas reales cuando el nombre de archivo Gemini termina en _XX_59 GMT (sello de exportación).
+overrides:
+  - match: "Seguimiento - Universal Academia de Idiomas"
+    hora_inicio: "2:00 PM"
+    hora_fin: "3:00 PM"
+  - match: "Actualización Dashboard - Universal"
+    hora_inicio: "11:00 AM"
+    hora_fin: "12:00 PM"

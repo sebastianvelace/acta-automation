@@ -8,7 +8,13 @@ import re
 from typing import Any
 
 from src.dates import fecha_entrega_for_compromiso
-from src.client_contacts import invitado_fields_from_client_email, lookup_client_contact_by_name
+from src.client_contacts import (
+    fold_person_name,
+    invitado_fields_from_client_email,
+    is_known_client_person,
+    lookup_client_contact,
+    lookup_client_contact_by_name,
+)
 from src.gorila_roster import (
     invitado_fields_from_email,
     invitado_fields_from_name,
@@ -39,6 +45,7 @@ TEAM_ALIASES: dict[str, dict[str, str]] = _register_aliases(
         "Redes Gorila Hosting": {"nombre": "Redes", "puesto": "Gorila Hosting"},
         "Social Media Gorila Hosting": {"nombre": "Social Media", "puesto": "Gorila Hosting"},
         "Executive Gorila Hosting": {"nombre": "Executive", "puesto": "Gorila Hosting"},
+        "ADS Gorila Hosting": {"nombre": "ADS", "puesto": "Gorila Hosting"},
         "Gorila Hosting": {"nombre": "Gorila Hosting", "puesto": "Equipo"},
         # Variaciones frecuentes en notas / compromisos
         "Eventos y Matrominios Portal": {
@@ -57,6 +64,10 @@ TEAM_ALIASES: dict[str, dict[str, str]] = _register_aliases(
         "Ventas Gorila Hosting": {"nombre": "Ventas", "puesto": "Gorila Hosting"},
         "Diseño Gorila Hosting": {"nombre": "Diseño", "puesto": "Gorila Hosting"},
         "Producto Gorila Hosting": {"nombre": "Producto", "puesto": "Gorila Hosting"},
+        "Web Gorila Hosting": {"nombre": "Web", "puesto": "Gorila Hosting"},
+        "SEO Gorila Hosting": {"nombre": "SEO", "puesto": "Gorila Hosting"},
+        "SEO - Gorila Hosting": {"nombre": "SEO", "puesto": "Gorila Hosting"},
+        "Códigos Creativos": {"nombre": "Códigos Creativos", "puesto": "Gorila Hosting"},
     }
 )
 
@@ -161,8 +172,9 @@ def _looks_like_person_name(s: str) -> bool:
 
 
 def _normalize_proximos_person_name(tag: str) -> str:
-    """Title-case ALL CAPS person tags from Gemini Próximos pasos."""
-    raw = (tag or "").strip()
+    """Title-case ALL CAPS person tags; strip stray dots (e.g. Samuel. Villalobos)."""
+    raw = re.sub(r"(?<=\w)\.(?=\s+\w)", "", (tag or "").strip())
+    raw = re.sub(r"\s+", " ", raw).strip()
     if not raw or not _looks_like_person_name(raw):
         return raw
     if raw.isupper():
@@ -402,6 +414,8 @@ def _merged_gorila_emails(dynamic: list[str] | None) -> list[str]:
 
 def _display_gorila_assignee(tag_or_responsable: str, *, universal: bool = False) -> str:
     raw = _strip_bracket_tag((tag_or_responsable or "").strip())
+    if universal and _GROWFIK_DISPLAY.search(raw):
+        return raw
     return normalize_gorila_compromiso_responsable_display(
         responsable_for_tag(raw),
         universal=universal,
@@ -506,6 +520,70 @@ def _invitado_dedupe_key(row: dict[str, str]) -> str:
     return f"name:{(row.get('nombre') or '').strip().casefold()}"
 
 
+def _invitado_person_fold_key(row: dict[str, str]) -> str:
+    email = (row.get("correo") or "").strip()
+    contact = lookup_client_contact(email) if email else None
+    name = contact.name if contact else (row.get("nombre") or "")
+    folded = fold_person_name(name)
+    if folded:
+        return f"person:{folded}"
+    if email:
+        return f"email:{email.casefold()}"
+    return f"name:{(row.get('nombre') or '').strip().casefold()}"
+
+
+_ROLE_EMAIL_LOCALS = frozenset({"presidencia", "info", "contacto", "admin", "ventas"})
+
+
+def _invitado_row_quality(row: dict[str, str]) -> tuple[int, int, int]:
+    email = (row.get("correo") or "").strip()
+    has_catalog = 1 if email and lookup_client_contact(email) else 0
+    local = email.split("@")[0].casefold() if "@" in email else ""
+    personal_email = 0 if local in _ROLE_EMAIL_LOCALS else 1
+    return (has_catalog, personal_email, len((row.get("nombre") or "")))
+
+
+def dedupe_invitados_by_person(invitados: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Una fila por persona: p. ej. presidencia@ y pedro.rodriguezh@ → mismo Pedro."""
+    groups: dict[str, list[dict[str, str]]] = {}
+    order: list[str] = []
+    for row in invitados:
+        key = _invitado_person_fold_key(row)
+        if key not in groups:
+            order.append(key)
+            groups[key] = []
+        groups[key].append(row)
+    out: list[dict[str, str]] = []
+    for key in order:
+        rows = groups[key]
+        if len(rows) == 1:
+            out.append(rows[0])
+        else:
+            out.append(max(rows, key=_invitado_row_quality))
+    return out
+
+
+def _compromiso_dedupe_key(row: dict[str, str]) -> tuple[str, str]:
+    resp = (row.get("responsable") or "").strip()
+    if _looks_like_person_name(resp):
+        resp_key = fold_person_name(resp)
+    else:
+        resp_key = resp.casefold()
+    return (resp_key, (row.get("tarea") or "").strip().casefold())
+
+
+def _dedupe_compromiso_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    seen: set[tuple[str, str]] = set()
+    out: list[dict[str, str]] = []
+    for row in rows:
+        k = _compromiso_dedupe_key(row)
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(row)
+    return out
+
+
 def merge_invitados_from_proximos_tags(
     invitados: list[dict[str, str]],
     proximos_items: list[dict[str, str]] | None,
@@ -563,6 +641,8 @@ def _tag_matches_gorila_email_person(tag: str, gorila_emails: list[str]) -> bool
         return False
     first = tokens[0][:4]
     for email in gorila_emails:
+        if lookup_client_contact(email):
+            continue
         local = re.sub(r"[^a-z]", "", email.split("@")[0].casefold())
         if first and local.startswith(first):
             return True
@@ -579,6 +659,45 @@ def _is_growfik_domain_assignee(tag_or_responsable: str) -> bool:
     return "growfik" in raw.casefold()
 
 
+def _split_assignee_tag_parts(raw: str) -> list[str]:
+    if "," not in raw:
+        return [raw] if raw else []
+    return [p.strip() for p in raw.split(",") if p.strip()]
+
+
+def _comma_tag_assignee_kind(
+    parts: list[str],
+    *,
+    gorila_person_names: list[str] | None = None,
+    gorila_emails: list[str] | None = None,
+) -> str | None:
+    """Clasifica tags multi-persona: ``internal``, ``client`` o ``None`` (ambiguo)."""
+    if len(parts) <= 1:
+        return None
+    kinds: list[str] = []
+    for part in parts:
+        if (
+            is_roster_member(part)
+            or is_gorila_responsable(part)
+            or _is_growfik_domain_assignee(part)
+            or is_internal_gorila_assignee(
+                part,
+                gorila_person_names=gorila_person_names,
+                gorila_emails=gorila_emails,
+            )
+        ):
+            kinds.append("internal")
+        elif is_known_client_person(part):
+            kinds.append("client")
+        else:
+            return None
+    if kinds and all(k == "internal" for k in kinds):
+        return "internal"
+    if kinds and all(k == "client" for k in kinds):
+        return "client"
+    return None
+
+
 def is_internal_gorila_assignee(
     tag_or_responsable: str,
     *,
@@ -589,6 +708,17 @@ def is_internal_gorila_assignee(
     raw = _strip_bracket_tag((tag_or_responsable or "").strip())
     if not raw:
         return False
+    parts = _split_assignee_tag_parts(raw)
+    if len(parts) > 1:
+        kind = _comma_tag_assignee_kind(
+            parts,
+            gorila_person_names=gorila_person_names,
+            gorila_emails=gorila_emails,
+        )
+        if kind == "internal":
+            return True
+        if kind == "client":
+            return False
     if _is_growfik_domain_assignee(raw):
         return True
     alias = lookup_team_alias(raw)
@@ -599,6 +729,9 @@ def is_internal_gorila_assignee(
     if is_gorila_responsable(raw):
         return True
     if is_gorila_group_commitment_tag(raw):
+        return False
+    normalized = _normalize_proximos_person_name(raw)
+    if is_known_client_person(normalized) or is_known_client_person(raw):
         return False
     names = gorila_person_names or []
     emails = gorila_emails or []
@@ -630,7 +763,7 @@ def is_gorila_responsable(responsable: str) -> bool:
 
 _CLIENT_DELIVERY_RE = re.compile(
     r"(?i)\bentregar\b.{0,120}\b(?:a\s+la|al)\s+"
-    r"(?:doctora|dr\.?|cliente|ingrid|pedro|tatiana)\b"
+    r"(?:doctora|dr\.?|ingrid|pedro|tatiana)\b"
 )
 
 
@@ -690,11 +823,24 @@ def build_compromisos_from_proximos_pasos(
         else:
             row["responsable"] = client_resp
             out_c.append(dict(row))
-    return out_g, out_c
+    return _dedupe_compromiso_rows(out_g), _dedupe_compromiso_rows(out_c)
 
 
 def _strip_trailing_punctuation(value: str) -> str:
     return (value or "").strip().rstrip(".,;:")
+
+
+def _compact_brand_key(value: str) -> str:
+    base = re.sub(r"[^a-z0-9]", "", (value or "").casefold())
+    return re.sub(r"(.)\1+", r"\1", base)
+
+
+def _same_client_account(a: str, b: str) -> bool:
+    """True when two labels refer to the same account (e.g. Lattir / La TIR)."""
+    ka, kb = _compact_brand_key(a), _compact_brand_key(b)
+    if not ka or not kb:
+        return False
+    return ka == kb or ka in kb or kb in ka
 
 
 def compose_cliente_heading(titulo: str, cliente: str) -> str:
@@ -710,7 +856,15 @@ def compose_cliente_heading(titulo: str, cliente: str) -> str:
         return t or "No especificado"
     if not t:
         return c
+    if t and c.startswith(f"{t} - "):
+        extra = c[len(t) + 3 :].strip()
+        suffix = t.rsplit(" - ", 1)[-1].strip() if " - " in t else t
+        if extra and _same_client_account(suffix, extra):
+            return t
     if " - " in c:
+        parts = [p.strip() for p in c.split(" - ") if p.strip()]
+        if len(parts) >= 2 and parts[-1].casefold() == parts[-2].casefold():
+            return " - ".join(parts[:-1])
         return c
     if t.casefold() == c.casefold():
         return t
@@ -718,7 +872,7 @@ def compose_cliente_heading(titulo: str, cliente: str) -> str:
         return t
     if " - " in t:
         suffix = t.rsplit(" - ", 1)[-1].strip()
-        if suffix.casefold() == c.casefold():
+        if suffix.casefold() == c.casefold() or _same_client_account(suffix, c):
             return t
     return f"{t} - {c}"
 
@@ -927,7 +1081,7 @@ def finalize_acta_after_llm(
         gorila_person_names=gorila_person_names,
         gorila_emails=gorila_emails,
     )
-    out["invitados"] = invitados
+    out["invitados"] = dedupe_invitados_by_person(invitados)
     out["cliente"] = compose_cliente_heading(titulo, str(out.get("cliente") or ""))
     out["asuntos_tratados"] = dedupe_asuntos_tratados(out.get("asuntos_tratados"))
     return apply_growfik_visibility_policy(out, universal=universal)

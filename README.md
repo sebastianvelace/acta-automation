@@ -135,7 +135,7 @@ Orden en [`src/pipeline.py`](src/pipeline.py):
 | Ana Maria | 1 | 4 |
 | Barrera Estrada | 2 | 3 |
 | Real State Seguimiento | 2 | 5 |
-| Sambal | 3 | 2 |
+| Sambal | 2 | 1 |
 | Marlon | 2 | 2 |
 | Universal Campañas | 8 | 0 |
 | Universal Dashboard | 8 | 0 |

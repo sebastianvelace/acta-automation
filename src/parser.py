@@ -8,6 +8,7 @@ from docx import Document
 
 from src.aliases import TEAM_ALIASES, looks_like_person_name
 from src.gorila_roster import roster_emails
+from src.meeting_time_overrides import apply_meeting_time_overrides
 
 # Capture group for a time literal (allows optional am/pm or trailing "h")
 _TIME_CAPTURE = (
@@ -413,5 +414,6 @@ def extract_text(docx_path: str) -> dict[str, Any]:
 
     meta["hora_inicio"] = body_ini or file_ini or ""
     meta["hora_fin"] = body_fin or ""
+    meta = apply_meeting_time_overrides(meta, source_filename=basename)
 
     return {"raw_text": raw_text, "metadata": meta}

@@ -8,6 +8,10 @@ contacts:
     name: Pedro Antonio Rodríguez Hernández
     role: Universal
 
+  - email: presidencia@universal.edu.co
+    name: Pedro Antonio Rodríguez Hernández
+    role: Universal
+
   - email: anama1310@hotmail.com
     name: Ana Maria Ramirez
     role: Ana Maria Psicología
@@ -27,3 +31,23 @@ contacts:
   - email: sophiabellomendez@gmail.com
     name: Sophia Bello Mendez
     role: Universal Idiomas
+
+  - email: ingeniera.sandra@gmail.com
+    name: Sandra Cespedes
+    role: Lattir
+
+  - email: diana@rebella.com.mx
+    name: Diana
+    role: Rebella
+
+  - email: sebasneiza.gercotek@gmail.com
+    name: Sebastian Neiza
+    role: Rebella
+
+  - email: jaristable@gmail.com
+    name: Jaris Table
+    role: Sambal
+
+  - email: jaimegchef@gmail.com
+    name: Jaime
+    role: Sambal

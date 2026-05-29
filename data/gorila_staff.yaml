@@ -79,6 +79,7 @@ staff:
       - "Katherin Laulate"
       - "Katherin Miluska"
       - "Kat"
+      - "Cat"
 
   - canonical_name: "Karen Tatiana Gonzalez Silva"
     emails: ["design2.gorilahosting@gmail.com"]
@@ -87,6 +88,12 @@ staff:
       - "Karen Tatiana Gonzalez"
       - "Karen Gonzalez Silva"
       - "Karen Tatiana"
+
+  - canonical_name: "Elvis Chiza M"
+    emails: ["ec.brandnco@gmail.com"]
+    role: "Diseñador Gráfico"
+    aliases:
+      - "Elvis Chiza"
 
   - canonical_name: "Viviana Blanco"
     emails: ["marketing@gorila.hosting"]
@@ -154,3 +161,10 @@ staff:
     aliases:
       - "Sebastian Diaz"
       - "Sebastián Diaz"
+
+  - canonical_name: "Darío"
+    emails: []
+    role: "Especialista SEO"
+    aliases:
+      - "Dario"
+      - "SEO - Gorila Hosting (Darío)"
