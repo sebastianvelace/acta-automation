@@ -1,7 +1,9 @@
+import hashlib
 import json
 import logging
 import os
 import re
+from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -114,12 +116,20 @@ Each item MUST be: {"tarea": string, "responsable": string, "fecha_entrega": str
 Technical hygiene: NEVER fabricate timestamps like "00:00:00". Keep JSON strings UTF-8 without control characters breaking JSON.
 """
 
-# Salida JSON. En tier Groq on_demand (~12k TPM) el límite suele aplicar a prompt + max_tokens en la petición.
-_MAX_COMPLETION_TOKENS = 6144
+# Salida JSON. En tier Groq on_demand el límite (TPD) aplica a prompt + max_tokens de la petición:
+# Groq reserva los max_tokens COMPLETOS al contar la cuota, así que sobre-reservar la agota al doble.
+# Un acta JSON real ocupa ~1.5k–2.5k tokens; 4096 deja margen amplio. Configurable por entorno.
+_MAX_COMPLETION_TOKENS = int(os.getenv("ACTA_MAX_COMPLETION_TOKENS", "4096"))
 _GROQ_REQUEST_TOKEN_CEILING = 11_500
 
 _MODEL = "llama-3.3-70b-versatile"
 _CHARS_PER_TOKEN = 4
+
+# Caché en disco del JSON crudo del modelo. Reprocesar las mismas notas (arreglos deterministas de
+# hora/Growfik/plantilla) reusa la extracción del LLM y cuesta 0 tokens (ni siquiera requiere API key).
+# Desactiva con ACTA_LLM_CACHE=0. La clave incluye prompt + modelo + max_tokens: si cambian, se invalida.
+_CACHE_ENABLED = os.getenv("ACTA_LLM_CACHE", "1") not in ("0", "false", "False", "")
+_CACHE_DIR = Path(__file__).resolve().parents[1] / ".cache" / "llm"
 
 _PROXIMOS_SECTION_RE = re.compile(
     r"(?is)(próximos\s+pasos\s*.*?)(?=^\s*detalles\s*$|\Z)",
@@ -130,6 +140,36 @@ _DETALLES_SECTION_RE = re.compile(r"(?is)(detalles\s*.*)\Z")
 
 def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // _CHARS_PER_TOKEN)
+
+
+def _llm_cache_key(system_prompt: str, user_body: str) -> str:
+    """Hash de todo lo que determina la salida del modelo (prompt, notas, modelo, max_tokens)."""
+    h = hashlib.sha256()
+    for part in (_MODEL, str(_MAX_COMPLETION_TOKENS), system_prompt, user_body):
+        h.update(part.encode("utf-8"))
+        h.update(b"\x00")
+    return h.hexdigest()
+
+
+def _cache_get(key: str) -> dict[str, Any] | None:
+    if not _CACHE_ENABLED:
+        return None
+    try:
+        return json.loads((_CACHE_DIR / f"{key}.json").read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def _cache_set(key: str, data: dict[str, Any]) -> None:
+    if not _CACHE_ENABLED:
+        return
+    try:
+        _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        (_CACHE_DIR / f"{key}.json").write_text(
+            json.dumps(data, ensure_ascii=False), encoding="utf-8"
+        )
+    except OSError as e:
+        logger.warning("No se pudo escribir caché LLM (%s): %s", key[:12], e)
 
 
 def _trim_to_budget(raw_text: str, budget_tokens: int) -> str:
@@ -319,8 +359,6 @@ def structure_meeting(
     metadata: dict | None = None,
     source_filename: str | None = None,
 ) -> dict:
-    client = Groq(api_key=os.environ["GROQ_API_KEY"])
-
     md = metadata or {}
     attendees = md.get("attendees") or []
     att_join = ", ".join(attendees) if attendees else "(ninguno detectado)"
@@ -374,6 +412,13 @@ def structure_meeting(
 
     user_body = head + raw_text + tail
 
+    cache_key = _llm_cache_key(_SYSTEM_PROMPT, user_body)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        logger.info("LLM cache hit (%s): se omite la llamada a Groq", cache_key[:12])
+        return _validated_and_post_process(cached, metadata=md)
+
+    client = Groq(api_key=os.environ["GROQ_API_KEY"])
     messages: list[dict[str, str]] = [
         {"role": "system", "content": _SYSTEM_PROMPT},
         {"role": "user", "content": user_body},
@@ -383,7 +428,7 @@ def structure_meeting(
     data = _chat_completion_parse(client, messages, last_raw_holder=holder)
 
     try:
-        return _validated_and_post_process(data, metadata=md)
+        result = _validated_and_post_process(data, metadata=md)
     except ValidationError as ve:
         fix_messages: list[dict[str, str]] = [
             {"role": "system", "content": _SYSTEM_PROMPT},
@@ -397,5 +442,9 @@ def structure_meeting(
             {"role": "user", "content": user_body},
         ]
         holder2 = _LastRaw()
-        data2 = _chat_completion_parse(client, fix_messages, last_raw_holder=holder2)
-        return _validated_and_post_process(data2, metadata=md)
+        data = _chat_completion_parse(client, fix_messages, last_raw_holder=holder2)
+        result = _validated_and_post_process(data, metadata=md)
+
+    # Solo cacheamos el JSON del modelo que ya validó (post-proceso se re-aplica en cada lectura).
+    _cache_set(cache_key, data)
+    return result

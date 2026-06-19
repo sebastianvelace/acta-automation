@@ -26,9 +26,14 @@ Entry point: `run_acta_pipeline(input_docx_path, *, source_filename=...)` en `sr
 **El único paso que consume tokens es `structure_meeting` en `src/llm.py` (Groq `llama-3.3-70b-versatile`).**
 Parser, overrides de hora, política Growfik, invitados, fechas en español y el render son **100% determinísticos**.
 
-Límite Groq tier gratis: **100.000 tokens/día (TPD)**. Cada acta cuesta ≈ **9.000–10.000 tokens**
-contra ese límite (prompt ~3.500 + los `max_tokens=6144` reservados se cuentan completos). ⇒ caben
-**~10–12 actas/día**. Por eso es fácil agotarlo.
+Límite Groq tier gratis: **100.000 tokens/día (TPD)**. Cada acta cuesta ≈ **prompt ~3.500 + los
+`max_tokens` reservados se cuentan completos** contra ese límite. Con `max_tokens=4096` (valor actual)
+cada llamada pesa ~7.500 ⇒ caben **~13–15 actas/día**.
+
+**Hay caché en disco** (`src/llm.py`, `.cache/llm/`): la primera vez que pasa un `.docx` por el LLM se
+guarda el JSON del modelo; reprocesarlo (arreglos de hora/Growfik/plantilla) es **cache hit = 0 tokens
+y ni siquiera requiere `GROQ_API_KEY`**. La clave = hash(prompt + modelo + max_tokens + notas), así que
+cambiar las notas o el prompt invalida automáticamente. Desactivable con `ACTA_LLM_CACHE=0`.
 
 ### Haz / No hagas
 
@@ -50,8 +55,8 @@ contra ese límite (prompt ~3.500 + los `max_tokens=6144` reservados se cuentan 
   resetea (p. ej. «try again in 30m»). **No reintentes en bucle** — espera o termina con parches deterministas.
 
 ### Costo del rate limit en la práctica
-El 429 reporta `Requested = prompt + max_tokens`. Como `max_tokens=6144` se reserva completo,
-cada llamada "pesa" ~10k aunque el acta real ocupe ~2k de salida. (Ver mejoras propuestas abajo.)
+El 429 reporta `Requested = prompt + max_tokens`. Groq reserva el `max_tokens` completo, por eso se bajó
+a 4096 (`ACTA_MAX_COMPLETION_TOKENS` para tunearlo). Un acta JSON real ocupa ~1.5k–2.5k tokens de salida.
 
 ---
 
@@ -118,10 +123,14 @@ Tras tocar código: `./.venv/bin/python -m pytest -q` (suite determinística).
 
 ---
 
-## Mejoras de tokens propuestas (aún NO implementadas)
+## Mejoras de tokens
 
-1. **Caché en disco del resultado del LLM**, con clave `hash(raw_text + system_prompt + model + max_tokens)`.
-   Reprocesar el mismo `.docx` (arreglo de hora/Growfik/plantilla) costaría **0 tokens**. Mayor ahorro real.
-2. **Bajar `_MAX_COMPLETION_TOKENS`** de 6144 a ~3072–4096. El JSON real de un acta ocupa ~1.500–2.500;
-   reservar 6144 infla el `Requested` y agota el TPD al doble de velocidad.
-3. La retry de schema reenvía el system prompt completo (~1.576 tok) — solo en error de validación; menor.
+Implementadas (en `src/llm.py`):
+
+1. ✅ **Caché en disco del JSON del modelo** (`.cache/llm/`), clave `hash(prompt + modelo + max_tokens + notas)`.
+   Reprocesar el mismo `.docx` cuesta **0 tokens** y no requiere API key. Toggle `ACTA_LLM_CACHE=0`.
+2. ✅ **`_MAX_COMPLETION_TOKENS` 6144 → 4096** (env `ACTA_MAX_COMPLETION_TOKENS`). Reduce el `Requested`
+   por llamada y deja más presupuesto para las notas (~5.5k tokens de `raw_text`).
+
+Pendiente (menor): la retry de schema reenvía el system prompt completo (~1.576 tok); solo dispara en
+error de validación, impacto bajo.
