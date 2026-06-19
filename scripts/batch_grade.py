@@ -21,37 +21,41 @@ if str(ROOT) not in sys.path:
 from src.aliases import finalize_acta_after_llm, is_universal_acta, lookup_team_alias, post_process_acta
 from src.client_contacts import fold_person_name, lookup_client_contact
 from src.google_workflow import apply_metadata_times_to_acta
-from src.gorila_roster import _is_growfik_branded_email
+from src.gorila_roster import _is_growfik_branded_email, lookup_staff_by_email
 from src.parser import extract_proximos_pasos_items, extract_text, is_gorila_email
 
 DOCS: dict[str, str] = {
     "Ana Maria": (
-        "/home/sebasvelace/Downloads/Seguimiento - Ana Maria Psicología_ "
-        "2026_05_28 08_31 GMT-05_00 - Notas de Gemini.docx"
+        "/home/sebasvelace/Downloads/Revisión Brochure Ana María Ramírez_ "
+        "2026_06_01 08_15 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Universal Campañas": (
         "/home/sebasvelace/Downloads/Revisión Campañas - Universal Academia de Idiomas_ "
-        "2026_05_27 14_58 GMT-05_00 - Notas de Gemini.docx"
+        "2026_06_10 14_58 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Marlon": (
         "/home/sebasvelace/Downloads/Seguimiento Marlon Becerra a._ "
-        "2026_05_20 14_01 GMT-05_00 - Notas de Gemini.docx"
+        "2026_06_05 14_00 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Sambal": (
         "/home/sebasvelace/Downloads/Revisión Pauta - Sambal_ "
-        "2026_05_28 08_31 GMT-05_00 - Notas de Gemini.docx"
+        "2026_06_04 08_30 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Universal Dashboard": (
         "/home/sebasvelace/Downloads/Actualización Dashboard - Universal _ "
-        "2026_05_28 10_59 GMT-05_00 - Notas de Gemini.docx"
+        "2026_06_04 10_59 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Barrera": (
         "/home/sebasvelace/Downloads/Seguimiento Barrera Estrada_ "
-        "2026_05_21 16_01 GMT-05_00 - Notas de Gemini.docx"
+        "2026_05_28 16_00 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Real State Seguimiento": (
         "/home/sebasvelace/Downloads/Seguimiento - Real State _ "
-        "2026_05_22 09_00 GMT-05_00 - Notas de Gemini.docx"
+        "2026_06_02 10_59 GMT-05_00 - Notas de Gemini.docx"
+    ),
+    "Real State Jun 09": (
+        "/home/sebasvelace/Downloads/Seguimiento - Real State _ "
+        "2026_06_09 11_01 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Universal Reporte Ventas": (
         "/home/sebasvelace/Downloads/Reunión Reporte de Ventas - Universal _ "
@@ -59,35 +63,51 @@ DOCS: dict[str, str] = {
     ),
     "Universal Redes": (
         "/home/sebasvelace/Downloads/Redes - Universal Idiomas._ "
-        "2026_05_26 16_02 GMT-05_00 - Notas de Gemini.docx"
+        "2026_06_09 16_01 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Universal Seguimiento": (
         "/home/sebasvelace/Downloads/Seguimiento - Universal Academia de Idiomas_ "
-        "2026_05_26 13_59 GMT-05_00 - Notas de Gemini.docx"
+        "2026_06_09 13_56 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Lattir": (
         "/home/sebasvelace/Downloads/Propuesta de Logo - Lattir_ "
         "2026_05_26 16_00 GMT-05_00 - Notas de Gemini.docx"
     ),
     "Rebella": (
-        "/home/sebasvelace/Downloads/Seguimiento Rebella_ "
-        "2026_05_28 14_01 GMT-05_00 - Notas de Gemini.docx"
+        "/home/sebasvelace/Downloads/Estrategia Rebella _ "
+        "2026_06_05 15_04 GMT-05_00 - Notas de Gemini.docx"
+    ),
+    "Eventos & Matrimonios": (
+        "/home/sebasvelace/Downloads/Seguimiento - Eventos & Matrimonios_ "
+        "2026_06_10 16_01 GMT-05_00 - Notas de Gemini.docx"
+    ),
+    "Memos Hands": (
+        "/home/sebasvelace/Downloads/Reunión - Creación de Logo de Memo´s Hands_ "
+        "2026_06_01 07_59 GMT-05_00 - Notas de Gemini.docx"
+    ),
+    "Elephant": (
+        "/home/sebasvelace/Downloads/1_1 Elephant_ "
+        "2026_06_04 16_59 GMT-05_00 - Notas de Gemini.docx"
     ),
 }
 
 EXPECTED_COUNTS: dict[str, tuple[int, int]] = {
-    "Ana Maria": (5, 1),
-    "Universal Campañas": (4, 1),
-    "Marlon": (2, 2),
-    "Sambal": (2, 1),
-    "Universal Dashboard": (6, 3),
-    "Barrera": (2, 3),
-    "Real State Seguimiento": (2, 5),
+    "Ana Maria": (4, 0),
+    "Universal Campañas": (7, 0),
+    "Marlon": (4, 2),
+    "Sambal": (6, 1),
+    "Universal Dashboard": (3, 1),
+    "Barrera": (3, 2),
+    "Real State Seguimiento": (1, 1),
+    "Real State Jun 09": (5, 4),
     "Universal Reporte Ventas": (0, 2),
-    "Universal Redes": (5, 1),
-    "Universal Seguimiento": (6, 7),
+    "Universal Redes": (4, 2),
+    "Universal Seguimiento": (6, 5),
     "Lattir": (1, 1),
-    "Rebella": (7, 0),
+    "Rebella": (6, 0),
+    "Eventos & Matrimonios": (5, 2),
+    "Memos Hands": (3, 1),
+    "Elephant": (2, 4),
 }
 
 
@@ -101,7 +121,15 @@ def cliente_from_titulo(titulo: str) -> str:
     if " - " in titulo:
         return titulo.rsplit(" - ", 1)[-1].strip().rstrip(".,;:")
     parts = titulo.split()
-    if len(parts) >= 2 and parts[0] in ("Seguimiento", "Revisión", "Actualización"):
+    if len(parts) >= 2 and parts[0] in (
+        "Seguimiento",
+        "Revisión",
+        "Actualización",
+        "Estrategia",
+        "Propuesta",
+        "Reunión",
+        "Redes",
+    ):
         return " ".join(parts[1:]).strip(" -").rstrip(".,;:")
     return titulo.rstrip(".,;:")
 
@@ -171,13 +199,20 @@ def _invitado_covers_email(email: str, rows: list[dict[str, Any]]) -> bool:
         if str(row.get("correo") or "").casefold() == key:
             return True
     contact = lookup_client_contact(email)
-    if not contact:
-        return False
-    person = fold_person_name(contact.name)
+    person = fold_person_name(contact.name) if contact else ""
+    if not person:
+        # Roster Gorila: misma persona con varios correos (ej. Anny socialmedia3@ / annyriios27@).
+        member = lookup_staff_by_email(email)
+        if not member:
+            return False
+        person = fold_person_name(member.canonical_name)
     for row in rows:
         row_email = str(row.get("correo") or "")
         row_contact = lookup_client_contact(row_email) if row_email else None
         if row_contact and fold_person_name(row_contact.name) == person:
+            return True
+        row_member = lookup_staff_by_email(row_email) if row_email else None
+        if row_member and fold_person_name(row_member.canonical_name) == person:
             return True
         if fold_person_name(str(row.get("nombre") or "")) == person:
             return True

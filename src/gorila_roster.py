@@ -200,6 +200,18 @@ def _is_growfik_branded_email(email: str) -> bool:
     return "growfik" in local
 
 
+def is_gorila_branded_email(email: str) -> bool:
+    """True para correos internos Gorila/Growfik (dominio, marca en local-part o roster)."""
+    e = (email or "").strip().casefold()
+    if not e:
+        return False
+    if e.endswith("@gorila.hosting"):
+        return True
+    if "gorilahosting" in e or _is_growfik_branded_email(e):
+        return True
+    return e in roster_emails()
+
+
 def format_staff_puesto_for_acta(role: str, *, universal: bool, email: str = "") -> str:
     """Universal actas show Growfik brand for growfik-branded staff emails; others use Gorila."""
     r = (role or "").strip()
@@ -340,7 +352,30 @@ def invitado_fields_from_email(
     client_row = invitado_fields_from_client_email(raw)
     if client_row:
         return client_row
+    if is_gorila_branded_email(raw):
+        return _invitado_gorila_fallback_from_email(raw, universal=universal)
     return invitado_fallback_from_email(raw, cliente_account=cliente_account)
+
+
+_GORILA_BRAND_IN_LOCAL = re.compile(r"(?i)gorila\s*hosting|gorilahosting|growfik")
+
+
+def _invitado_gorila_fallback_from_email(email: str, *, universal: bool) -> dict[str, str]:
+    """Correo interno Gorila sin entrada en roster: nombre desde local-part, puesto de marca."""
+    raw = (email or "").strip()
+    local = raw.partition("@")[0]
+    cleaned = _GORILA_BRAND_IN_LOCAL.sub(" ", local)
+    nombre = _humanize_email_local(cleaned) or _humanize_email_local(local) or raw
+    if universal and _is_growfik_branded_email(raw):
+        puesto = "Growfik"
+    else:
+        puesto = "Gorila Hosting"
+    return {
+        "correo": raw,
+        "nombre": nombre,
+        "puesto": puesto,
+        "asistencia": "Confirmado",
+    }
 
 
 def invitado_fields_from_name(

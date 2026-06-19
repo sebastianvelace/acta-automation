@@ -1,4 +1,5 @@
 # Contactos de clientes conocidos por correo (enriquecimiento de invitados, sin LLM).
+# `aliases` (opcional): display names / typos de Gemini que resuelven a este contacto.
 contacts:
   - email: samuel.villalobos@universal.edu.co
     name: Samuel Villalobos
@@ -24,6 +25,10 @@ contacts:
     name: Enythelvira
     role: Barrera Estrada Abogados
 
+  - email: asistenteadministrativo@barreraestrada.com
+    name: Mariana
+    role: Barrera Estrada Abogados
+
   - email: camilolinaresj@gmail.com
     name: Camilo Linares Jiménez
     role: Real State
@@ -31,23 +36,67 @@ contacts:
   - email: sophiabellomendez@gmail.com
     name: Sophia Bello Mendez
     role: Universal Idiomas
+    aliases:
+      - Sophia7 Marketing  # display name Gemini de Sophia
 
   - email: ingeniera.sandra@gmail.com
     name: Sandra Cespedes
     role: Lattir
 
   - email: diana@rebella.com.mx
-    name: Diana
+    name: Diana Forero
+    role: Rebella
+
+  - email: contacto@rebella.com.mx
+    name: Contacto Rebella
+    role: Rebella
+
+  - email: kata.arevalo@gercotek.com
+    name: Kata Arevalo
     role: Rebella
 
   - email: sebasneiza.gercotek@gmail.com
     name: Sebastian Neiza
     role: Rebella
 
+  - email: lauramedinafranco@gmail.com
+    name: Laura Medina
+    role: Rebella
+
   - email: jaristable@gmail.com
     name: Jaris Table
     role: Sambal
+    aliases:
+      - Yaris  # typo de Gemini para Jaris
 
   - email: jaimegchef@gmail.com
     name: Jaime
     role: Sambal
+
+  - email: info@eventosymatrimonios.com
+    name: Eventos & Matrimonios
+    role: Eventos & Matrimonios
+
+  - email: guicarqui@icloud.com
+    name: Guillermo Cardona
+    role: Memos Hands
+
+  - email: gothicgirlmagazine@gmail.com
+    name: Angélica
+    role: Elephant Motors
+
+  - email: jefeconsemprosas@gmail.com
+    name: Marlon Becerra
+    role: Consempro SAS
+
+  - email: mercadeoombcentromayor@gmail.com
+    name: Santiago
+    role: Mercadeo OMB Centro Mayor
+
+  - email: consemprosas@gmail.com
+    name: Consempro SAS
+    role: Consempro SAS
+
+  - email: contableconsemprosas@gmail.com
+    name: Contabilidad Consempro SAS
+    role: Consempro SAS

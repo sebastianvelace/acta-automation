@@ -39,11 +39,14 @@ SOURCE PRIORITY
 3. Nombre del archivo de origen — **último recurso solo** si el cliente/título jamás aparece en notas/metadata.
 
 MAPPING (Spanish acta headings → JSON)
-- **Título de la reunión** → titulo — nombre corto de la reunión o temática (ej. "Revisión Pauta", "Seguimiento mensual").
+- **Título de la reunión** → titulo — nombre corto de la reunión o temática, DERIVADO del título/tema real que aparezca en
+  las NOTAS o el METADATA. Cualquier ejemplo de formato (p. ej. una temática genérica de seguimiento o de revisión de avances)
+  es solo ilustrativo del estilo; NUNCA lo copies literalmente como salida.
   NO incluyas aquí el nombre de la cuenta/cliente; eso va en ``cliente``.
 - **Fecha, hora_inicio y hora_fin** — METADATA primera; fallback a menciones claras del cuerpo; "No especificada" solo si tras ambas fuentes no hay evidencia.
 - **Lugar / enlace** → lugar — Google Meet / Zoom / oficina, etc.; "No especificada" cuando falte.
-- **Cliente (cuenta)** → cliente — solo el nombre de la cuenta o marca del cliente (ej. "Real State", "Eventos & Matrimonios", "Universal").
+- **Cliente (cuenta)** → cliente — solo el nombre de la cuenta o marca del cliente, EXTRAÍDO de las NOTAS/METADATA (o del
+  nombre de archivo como último recurso). NUNCA inventes ni copies un nombre de cuenta de ejemplo: usa el cliente real de la reunión.
   Preserve "&" verbatim. NO repitas el nombre de la reunión en ``cliente`` si ya va en ``titulo``; el documento los combina.
   NO inventes prefijos desde el archivo si las notas traen otro cliente.
 - **Objetivo** → objetivo — empieza con **verbo en infinitivo** (ej. «Definir…», «Revisar…»); 1 a 3 oraciones sobre el porqué y el alcance.

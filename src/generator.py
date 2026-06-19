@@ -62,9 +62,12 @@ def generate_acta(
     if data.get("hora_final") in (None, "") and data.get("hora_fin") not in (None, ""):
         data = {**data, "hora_final": data["hora_fin"]}
 
+    # Growfik solo aparece en actas Universal; default conservador sin marca Growfik.
+    data.setdefault("encabezado_compromisos_gorila", "GORILA")
+
     tpl = DocxTemplate(template_path)
     print(f"Template loaded: {type(tpl)}")
-    tpl.render(data)
+    tpl.render(data, autoescape=True)
     _strip_trailing_empty_columns(tpl.docx)
 
     out_dir = output_dir if output_dir is not None else _OUTPUT_DIR

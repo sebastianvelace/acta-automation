@@ -80,6 +80,7 @@ staff:
       - "Katherin Miluska"
       - "Kat"
       - "Cat"
+      - "Catherine"
 
   - canonical_name: "Karen Tatiana Gonzalez Silva"
     emails: ["design2.gorilahosting@gmail.com"]
@@ -90,10 +91,16 @@ staff:
       - "Karen Tatiana"
 
   - canonical_name: "Elvis Chiza M"
-    emails: ["ec.brandnco@gmail.com"]
+    emails: ["ec.brandnco@gmail.com", "ec.elvischizam@gmail.com"]
     role: "Diseñador Gráfico"
     aliases:
       - "Elvis Chiza"
+
+  - canonical_name: "Gustavo Alvan"
+    emails: ["gustavoalvant@gmail.com"]
+    role: "Diseñador Gráfico"
+    aliases:
+      - "Gustavo Alván"
 
   - canonical_name: "Viviana Blanco"
     emails: ["marketing@gorila.hosting"]

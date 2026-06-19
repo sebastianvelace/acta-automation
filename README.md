@@ -134,7 +134,7 @@ Orden en [`src/pipeline.py`](src/pipeline.py):
 |---------|--------|---------|
 | Ana Maria | 1 | 4 |
 | Barrera Estrada | 2 | 3 |
-| Real State Seguimiento | 2 | 5 |
+| Real State Seguimiento | 4 | 5 |
 | Sambal | 2 | 1 |
 | Marlon | 2 | 2 |
 | Universal Campañas | 8 | 0 |
@@ -237,21 +237,19 @@ Sin credenciales Google el pipeline funciona igual (horas desde parser + inferen
 ## Tests
 
 ```bash
-.venv/bin/pytest tests/ --ignore=tests/test_pipeline_e2e.py
+.venv/bin/pytest tests/
 ```
 
-~**173 tests** pasando (determinísticos). Incluye:
+Suite mínima (determinística, sin Groq):
 
-- `test_six_clients_batch`, `test_real_state_seguimiento`, `test_barrera_estrada`, `test_universal_acta`
-- Roster, aliases, fechas, metadata_times, parser invite, invitados enrich
+- [`tests/test_golden_batch.py`](tests/test_golden_batch.py) — cada DOCX golden de `scripts/batch_grade.py` debe puntuar ≥ 9.0 en encabezado/invitados/compromisos y clavar los conteos de `EXPECTED_COUNTS` (se omiten archivos ausentes en `~/Downloads`).
+- [`tests/test_core_rules.py`](tests/test_core_rules.py) — helpers de alto riesgo: overrides de hora con `date`/`dates`, normalización de nombres de Próximos pasos, aliases de contactos YAML, `compose_cliente_heading`.
 
 Calificación batch sin Groq:
 
 ```bash
 .venv/bin/python scripts/batch_grade.py
 ```
-
-E2E con PDF requiere LibreOffice (`tests/test_pipeline_e2e.py`).
 
 ## Estructura del proyecto
 

@@ -1,8 +1,74 @@
-# Horas reales cuando el nombre de archivo Gemini termina en _XX_59 GMT (sello de exportación).
+# Horas reales cuando el nombre de archivo Gemini lleva sello de exportación (_XX_59, _XX_53, …).
+# `dates` (lista, formato YYYY_MM_DD del nombre de archivo) limita el override a esas reuniones;
+# también se acepta `date` (un solo valor). Sin fecha aplica a cualquier archivo cuyo título
+# coincida — solo para series donde TODAS las ocurrencias llevan sello (nunca hay hora real).
+# Si un override sin fecha coincide pero el parser ya extrajo hora real, gana la hora del parser.
 overrides:
+  # Ocurrencias 05_07 07_51 y 05_14 07_56 fueron en la mañana; solo las de la tarde usan 3 PM.
+  - match: "Revisión Campañas - Universal Academia de Idiomas"
+    dates: ["2026_05_20", "2026_05_27", "2026_06_03", "2026_06_10", "2026_06_17"]
+    hora_inicio: "3:00 PM"
+    hora_fin: "4:00 PM"
+  # Sellos 13_5x; las ocurrencias 05_12 14_00 y 05_19 13_43 traen hora real en el archivo.
   - match: "Seguimiento - Universal Academia de Idiomas"
+    dates: ["2026_05_05", "2026_05_26", "2026_06_02", "2026_06_09", "2026_06_16"]
     hora_inicio: "2:00 PM"
     hora_fin: "3:00 PM"
+  # Sellos 10_5x; 05_07 y 05_21 traen 11_02 real en el archivo.
   - match: "Actualización Dashboard - Universal"
+    dates: ["2026_05_14", "2026_05_28", "2026_06_04"]
     hora_inicio: "11:00 AM"
     hora_fin: "12:00 PM"
+  # Misma serie de dashboard renombrada en el calendario (06_11 10_59, sello sin hora real).
+  - match: "Dashboard y Web - Universal"
+    dates: ["2026_06_11"]
+    hora_inicio: "11:00 AM"
+    hora_fin: "12:00 PM"
+  # Serie de dashboard Universal renombrada otra vez (06_18 11_02 ≈ hora real; normaliza a 11:00).
+  - match: "Revisión Dashboard"
+    dates: ["2026_06_18"]
+    hora_inicio: "11:00 AM"
+    hora_fin: "12:00 PM"
+  # 05_06 16_07 y 05_13 16_31 traen hora real; 05_29 14_59 fue en otro horario.
+  - match: "Seguimiento - Eventos & Matrimonios"
+    dates: ["2026_06_03"]
+    hora_inicio: "4:00 PM"
+    hora_fin: "5:00 PM"
+  # Única ocurrencia (06_01 07_59) con sello: la hora nunca llega por archivo.
+  - match: "Creación de Logo de Memo"
+    hora_inicio: "7:00 AM"
+    hora_fin: "8:00 AM"
+  # Sellos 15_5x; 05_26 16_02 y 06_09 16_01 traen hora real en el archivo.
+  - match: "Redes - Universal Idiomas"
+    dates: ["2026_05_05", "2026_05_12", "2026_05_19", "2026_06_02"]
+    hora_inicio: "4:00 PM"
+    hora_fin: "5:00 PM"
+  # 05_22 / 05_29 / 06_09 traen hora real en el archivo.
+  - match: "Seguimiento - Real State"
+    date: "2026_06_02"
+    hora_inicio: "10:00 AM"
+    hora_fin: "11:00 AM"
+  # 05_28 14_01 trae hora real; 06_04 13_55 y 06_17 11_52 llevan sello.
+  - match: "Seguimiento Rebella"
+    dates: ["2026_06_04", "2026_06_11", "2026_06_17"]
+    hora_inicio: "2:00 PM"
+    hora_fin: "3:00 PM"
+  # 06_05 15_04 trae hora casi real; el override normaliza 3:04 → 3:00 solo para esa acta.
+  - match: "Estrategia Rebella"
+    dates: ["2026_06_05"]
+    hora_inicio: "3:00 PM"
+    hora_fin: "4:00 PM"
+  # Única ocurrencia (06_04 16_59) con sello: la hora nunca llega por archivo.
+  - match: "1_1 Elephant"
+    hora_inicio: "5:00 PM"
+    hora_fin: "6:00 PM"
+  # Pauta Sambal es reunión de mañana (05_21 08_00, 05_28 08_31, 06_04 08_30); 06_18 11_59 es sello.
+  - match: "Revisión Pauta - Sambal"
+    dates: ["2026_06_18"]
+    hora_inicio: "8:30 AM"
+    hora_fin: "9:30 AM"
+  # Notas dicen "3:00 p.m"; el archivo 06_18 15_01 trae el sello con minuto :01.
+  - match: "Seguimiento Marlon Becerra"
+    dates: ["2026_06_18"]
+    hora_inicio: "3:00 PM"
+    hora_fin: "4:00 PM"

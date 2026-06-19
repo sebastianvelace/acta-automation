@@ -19,6 +19,7 @@ class ClientContact:
     email: str
     name: str
     role: str
+    aliases: tuple[str, ...] = ()
 
 
 def _load_raw_contacts() -> list[dict[str, Any]]:
@@ -40,8 +41,14 @@ def load_client_contacts() -> tuple[ClientContact, ...]:
         email = str(row.get("email") or "").strip()
         name = str(row.get("name") or "").strip()
         role = str(row.get("role") or "").strip()
+        raw_aliases = row.get("aliases")
+        aliases = tuple(
+            str(a).strip()
+            for a in (raw_aliases if isinstance(raw_aliases, list) else [])
+            if str(a).strip()
+        )
         if email and name:
-            out.append(ClientContact(email=email, name=name, role=role))
+            out.append(ClientContact(email=email, name=name, role=role, aliases=aliases))
     return tuple(out)
 
 
@@ -76,6 +83,23 @@ def lookup_client_contact_by_name(name: str) -> ClientContact | None:
         if _fold_person_name(contact.name) == target:
             return contact
     return None
+
+
+@lru_cache(maxsize=1)
+def _contacts_by_alias() -> dict[str, ClientContact]:
+    out: dict[str, ClientContact] = {}
+    for contact in load_client_contacts():
+        for alias in contact.aliases:
+            out[_fold_person_name(alias)] = contact
+    return out
+
+
+def lookup_client_contact_by_alias(name: str) -> ClientContact | None:
+    """Match contacto YAML por alias/display name (ignora tildes y mayúsculas)."""
+    key = _fold_person_name(name)
+    if not key:
+        return None
+    return _contacts_by_alias().get(key)
 
 
 def is_known_client_person(name: str) -> bool:

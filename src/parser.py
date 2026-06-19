@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import re
 from typing import Any, TypedDict
@@ -9,6 +10,8 @@ from docx import Document
 from src.aliases import TEAM_ALIASES, looks_like_person_name
 from src.gorila_roster import roster_emails
 from src.meeting_time_overrides import apply_meeting_time_overrides
+
+logger = logging.getLogger(__name__)
 
 # Capture group for a time literal (allows optional am/pm or trailing "h")
 _TIME_CAPTURE = (
@@ -365,10 +368,10 @@ def _extract_times_from_filename(basename: str) -> tuple[str, str]:
 
 
 def _filename_time_likely_gemini_export(basename: str, minute: int) -> bool:
-    """Gemini export filenames often end in ``…_15_59 GMT`` (export stamp), not meeting start."""
+    """Gemini export filenames often end in ``…_13_59 GMT`` / ``…_13_53 GMT`` (export stamp)."""
     if not re.search(r"(?i)GMT", basename or ""):
         return False
-    return minute >= 59
+    return minute >= 53
 
 
 def count_detalles_blocks(raw_text: str) -> tuple[int, int]:
@@ -407,13 +410,28 @@ def extract_text(docx_path: str) -> dict[str, Any]:
     body_ini, body_fin = _extract_hora_from_body(raw_text)
     basename = os.path.basename(docx_path)
     file_ini, _ = _extract_times_from_filename(basename)
+    discarded_stamp = ""
     if not body_ini and file_ini:
         fm = FILENAME_DATETIME_RE.search(basename)
         if fm and _filename_time_likely_gemini_export(basename, int(fm.group(5))):
+            discarded_stamp = file_ini
             file_ini = ""
 
     meta["hora_inicio"] = body_ini or file_ini or ""
     meta["hora_fin"] = body_fin or ""
-    meta = apply_meeting_time_overrides(meta, source_filename=basename)
+    meta = apply_meeting_time_overrides(
+        meta, source_filename=basename, notes_text=raw_text
+    )
+
+    # Sello de exportación Gemini descartado y ningún override lo cubrió: la hora se
+    # perdió. Avisar con datos accionables para crear la entrada en el YAML.
+    if discarded_stamp and not meta.get("hora_inicio"):
+        logger.warning(
+            "Sello de exportación Gemini descartado (%s) sin override que lo cubra en %r; "
+            "agrega una entrada en data/meeting_time_overrides.yaml (match + dates) "
+            "para fijar la hora real.",
+            discarded_stamp,
+            basename,
+        )
 
     return {"raw_text": raw_text, "metadata": meta}

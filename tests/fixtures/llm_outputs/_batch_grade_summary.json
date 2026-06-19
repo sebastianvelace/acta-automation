@@ -9,12 +9,12 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 5,
-      "got_cliente": 1,
-      "exp_gorila": 5,
-      "exp_cliente": 1
+      "got_gorila": 4,
+      "got_cliente": 0,
+      "exp_gorila": 4,
+      "exp_cliente": 0
     },
-    "cliente": "Seguimiento - Ana Maria Psicología",
+    "cliente": "Revisión Brochure Ana María Ramírez",
     "lugar": "Google Meet",
     "invitados_n": 4
   },
@@ -28,10 +28,10 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 4,
-      "got_cliente": 1,
-      "exp_gorila": 4,
-      "exp_cliente": 1
+      "got_gorila": 7,
+      "got_cliente": 0,
+      "exp_gorila": 7,
+      "exp_cliente": 0
     },
     "cliente": "Revisión Campañas - Universal Academia de Idiomas",
     "lugar": "Google Meet",
@@ -47,14 +47,14 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 2,
+      "got_gorila": 4,
       "got_cliente": 2,
-      "exp_gorila": 2,
+      "exp_gorila": 4,
       "exp_cliente": 2
     },
     "cliente": "Seguimiento Marlon Becerra a",
     "lugar": "Google Meet",
-    "invitados_n": 8
+    "invitados_n": 9
   },
   {
     "label": "Sambal",
@@ -66,9 +66,9 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 2,
+      "got_gorila": 6,
       "got_cliente": 1,
-      "exp_gorila": 2,
+      "exp_gorila": 6,
       "exp_cliente": 1
     },
     "cliente": "Revisión Pauta - Sambal",
@@ -85,10 +85,10 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 6,
-      "got_cliente": 3,
-      "exp_gorila": 6,
-      "exp_cliente": 3
+      "got_gorila": 3,
+      "got_cliente": 1,
+      "exp_gorila": 3,
+      "exp_cliente": 1
     },
     "cliente": "Actualización Dashboard - Universal",
     "lugar": "Google Meet",
@@ -104,10 +104,10 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 2,
-      "got_cliente": 3,
-      "exp_gorila": 2,
-      "exp_cliente": 3
+      "got_gorila": 3,
+      "got_cliente": 2,
+      "exp_gorila": 3,
+      "exp_cliente": 2
     },
     "cliente": "Seguimiento Barrera Estrada",
     "lugar": "Google Meet",
@@ -123,14 +123,33 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 2,
-      "got_cliente": 5,
-      "exp_gorila": 2,
-      "exp_cliente": 5
+      "got_gorila": 1,
+      "got_cliente": 1,
+      "exp_gorila": 1,
+      "exp_cliente": 1
     },
     "cliente": "Seguimiento - Real State",
     "lugar": "Google Meet",
-    "invitados_n": 4
+    "invitados_n": 7
+  },
+  {
+    "label": "Real State Jun 09",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 5,
+      "got_cliente": 4,
+      "exp_gorila": 5,
+      "exp_cliente": 4
+    },
+    "cliente": "Seguimiento - Real State",
+    "lugar": "Google Meet",
+    "invitados_n": 5
   },
   {
     "label": "Universal Reporte Ventas",
@@ -161,10 +180,10 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 5,
-      "got_cliente": 1,
-      "exp_gorila": 5,
-      "exp_cliente": 1
+      "got_gorila": 4,
+      "got_cliente": 2,
+      "exp_gorila": 4,
+      "exp_cliente": 2
     },
     "cliente": "Redes - Universal Idiomas",
     "lugar": "Google Meet",
@@ -181,9 +200,9 @@
     },
     "compromisos": {
       "got_gorila": 6,
-      "got_cliente": 7,
+      "got_cliente": 5,
       "exp_gorila": 6,
-      "exp_cliente": 7
+      "exp_cliente": 5
     },
     "cliente": "Seguimiento - Universal Academia de Idiomas",
     "lugar": "Google Meet",
@@ -218,13 +237,70 @@
       "overall": 10.0
     },
     "compromisos": {
-      "got_gorila": 7,
+      "got_gorila": 6,
       "got_cliente": 0,
-      "exp_gorila": 7,
+      "exp_gorila": 6,
       "exp_cliente": 0
     },
-    "cliente": "Seguimiento Rebella",
+    "cliente": "Estrategia Rebella",
     "lugar": "Google Meet",
-    "invitados_n": 7
+    "invitados_n": 4
+  },
+  {
+    "label": "Eventos & Matrimonios",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 5,
+      "got_cliente": 2,
+      "exp_gorila": 5,
+      "exp_cliente": 2
+    },
+    "cliente": "Seguimiento - Eventos & Matrimonios",
+    "lugar": "Google Meet",
+    "invitados_n": 6
+  },
+  {
+    "label": "Memos Hands",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 3,
+      "got_cliente": 1,
+      "exp_gorila": 3,
+      "exp_cliente": 1
+    },
+    "cliente": "Reunión - Creación de Logo de Memo´s Hands",
+    "lugar": "Google Meet",
+    "invitados_n": 4
+  },
+  {
+    "label": "Elephant",
+    "skipped": false,
+    "scores": {
+      "encabezado": 10.0,
+      "invitados": 10.0,
+      "compromisos": 10.0,
+      "overall": 10.0
+    },
+    "compromisos": {
+      "got_gorila": 2,
+      "got_cliente": 4,
+      "exp_gorila": 2,
+      "exp_cliente": 4
+    },
+    "cliente": "1 1 Elephant - Elephant Motors",
+    "lugar": "Google Meet",
+    "invitados_n": 3
   }
 ]
